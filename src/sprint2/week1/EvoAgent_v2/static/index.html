@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EvoAgent V2</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><span class="eyebrow">FIXED-ROLE COLLABORATIVE REVIEW</span><h1>EvoAgent <em>V2</em></h1></div>
+      <div id="health" class="health">正在检查配置…</div>
+    </header>
+    <section class="hero">
+      <div>
+        <h2>让同一个 PR 接受<br><span>可测量的多角色审查</span></h2>
+        <p>保留 V1 单 Prompt 基线；V2 使用 Lead、Security、Correctness/Reliability、Critic 和证据门禁。</p>
+      </div>
+      <form id="review-form">
+        <label>GitHub Pull Request URL</label>
+        <input id="pr-url" type="url" placeholder="https://github.com/owner/repo/pull/42" required>
+        <label>审查模式</label>
+        <select id="mode"><option value="collaborative">V2 Collaborative · 5 calls</option><option value="baseline">V1 Baseline · 1 call</option></select>
+        <div class="actions"><button type="submit">开始审查</button><button id="compare" type="button" class="secondary">V1 / V2 对照</button></div>
+        <div id="submit-result" class="hint"></div>
+      </form>
+    </section>
+    <section class="workspace">
+      <aside><div class="section-title"><h3>任务</h3><button id="refresh" class="text-button">刷新</button></div><div id="tasks" class="tasks"></div></aside>
+      <article id="report"><div class="empty"><b>选择一个任务</b><span>查看最终 Finding、角色轨迹和调用指标。</span></div></article>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
