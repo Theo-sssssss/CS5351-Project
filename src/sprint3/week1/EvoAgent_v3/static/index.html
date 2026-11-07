@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EvoAgent V3</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><span class="eyebrow">BOUNDED TOOL-USING REVIEW</span><h1>EvoAgent <em>V3</em></h1></div>
+      <div id="health" class="health">Checking configuration…</div>
+    </header>
+    <section class="hero">
+      <div>
+        <h2>Let review roles use tools,<br><span>while keeping strict boundaries</span></h2>
+        <p>V3 retains V1 and V2, then adds read-only tools, budgets, checkpoints, cancellation, and resume.</p>
+      </div>
+      <form id="review-form">
+        <label>GitHub Pull Request URL</label>
+        <input id="pr-url" type="url" placeholder="https://github.com/owner/repo/pull/42" required>
+        <label>Review mode</label>
+        <select id="mode"><option value="agentic">V3 Agentic · bounded tools</option><option value="collaborative">V2 Collaborative · fixed 5 calls</option><option value="baseline">V1 Baseline · 1 call</option></select>
+        <div class="actions"><button type="submit">Start review</button><button id="compare" type="button" class="secondary">Compare V1 / V2 / V3</button></div>
+        <div id="submit-result" class="hint"></div>
+      </form>
+    </section>
+    <section class="workspace">
+      <aside><div class="section-title"><h3>Tasks</h3><button id="refresh" class="text-button">Refresh</button></div><div id="tasks" class="tasks"></div></aside>
+      <article id="report"><div class="empty"><b>Select a task</b><span>View final findings, role traces, and usage metrics.</span></div></article>
+    </section>
+  </main>
+  <div id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
