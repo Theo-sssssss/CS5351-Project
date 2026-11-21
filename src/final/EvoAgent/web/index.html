@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-CN">
+<!-- 控制台文档元信息与样式入口；页面行为由末尾 app.js 绑定。 -->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d10">
+  <title>EvoAgent · 智能代码审查控制台</title>
+  <meta name="description" content="EvoAgent 多智能体代码审查、自动修复与 Skill 演进控制台">
+  <link rel="stylesheet" href="/assets/app.css?v=20261119.2">
+  <link rel="stylesheet" href="/assets/login.css?v=20260805">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 主导航的 data-view 与下方 view-* 区块和 URL hash 一一对应。 -->
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="#overview" aria-label="EvoAgent 首页">
+        <span class="brand-mark" aria-hidden="true">E</span>
+        <span class="brand-copy">EvoAgent<small>REVIEW CONTROL</small></span>
+      </a>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="overview" data-icon="OV">
+          <span>运行总览</span>
+        </button>
+        <button class="nav-item" data-view="review" data-icon="RV">
+          <span>发起审查</span>
+        </button>
+        <button class="nav-item" data-view="tasks" data-icon="TS">
+          <span>任务中心</span>
+        </button>
+        <button class="nav-item" data-view="skills" data-icon="SK">
+          <span>Skills</span>
+        </button>
+        <button class="nav-item" data-view="evolution" data-icon="EV">
+          <span>演进实验室</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span><small>系统状态</small><b id="system-status">正在连接服务</b></span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <h1 id="page-title">运行总览</h1>
+        <div class="top-actions">
+          <button class="refresh-button" id="refresh" aria-label="刷新当前数据">刷新</button>
+          <button class="button secondary hidden" id="logout">退出登录</button>
+          <span class="avatar" aria-label="当前用户">EA</span>
+        </div>
+      </header>
+
+      <!-- 运行总览：统计、最近任务与模型执行链由接口响应填充。 -->
+      <section class="view active" id="view-overview" aria-labelledby="page-title">
+        <div class="hero">
+          <div class="hero-copy">
+            <h2>让每一次代码审查，<br><em>都成为系统的经验。</em></h2>
+            <p>Lead 主 Agent 动态委派安全、可靠性与 Critic 从 Agent。Harness 统一管理状态、预算、恢复与版本门禁。</p>
+            <div class="hero-actions">
+              <button class="button accent" data-jump="review">新建 PR 审查</button>
+              <button class="text-button" data-jump="tasks">查看任务记录</button>
+            </div>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="orbit orbit-one"></div>
+            <div class="orbit orbit-two"></div>
+            <div class="core"><span>E</span><small>HARNESS</small></div>
+            <span class="node node-a">SEC</span>
+            <span class="node node-b">REL</span>
+            <span class="node node-c">LLM</span>
+          </div>
+        </div>
+
+        <div class="stats" id="stats" aria-live="polite">
+          <div class="stat loading"></div><div class="stat loading"></div><div class="stat loading"></div>
+          <div class="stat loading"></div><div class="stat loading"></div><div class="stat loading"></div>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel tasks-panel">
+            <div class="panel-head">
+              <h3>最近任务</h3>
+              <button class="link-button" data-jump="tasks">查看全部</button>
+            </div>
+            <div id="recent-tasks" class="task-list">
+              <div class="list-loading"></div><div class="list-loading"></div><div class="list-loading"></div>
+            </div>
+          </article>
+
+          <article class="panel agent-panel">
+            <div class="panel-head">
+              <h3>实际执行链</h3>
+              <span class="status status-online"><i></i>运行中</span>
+            </div>
+            <div class="agent-flow" id="execution-chain">
+              <div class="agent-step is-pending" id="llm-agent-step">
+                <b>--</b><span><strong>读取运行模式</strong><small id="llm-agent-detail">正在读取实际模型配置</small></span>
+                <em id="llm-agent-state">检查中</em>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 审查入口：收集仓库、PR 编号和统一 Diff，支持异步提交。 -->
+      <section class="view" id="view-review" aria-labelledby="page-title">
+        <div class="section-heading">
+          <div><h2>发起 PR 审查</h2><p>通过 GitHub 链接导入变更，或提交 Unified Diff。</p></div>
+        </div>
+        <div class="form-layout">
+          <article class="panel form-panel">
+            <label>变更来源 <select id="review-source"><option value="github">GitHub PR 链接</option><option value="manual">手动提交 Diff</option></select></label>
+            <form id="github-review-form">
+              <label>GitHub PR 链接<input name="pr_url" type="url" maxlength="500" placeholder="https://github.com/owner/repo/pull/42" required></label>
+              <button class="button" type="submit">导入并审查</button>
+            </form>
+            <form id="review-form" class="hidden">
+              <div class="field-row">
+                <label>仓库地址
+                  <input name="repository" placeholder="owner/repository" autocomplete="off" required>
+                </label>
+                <label>PR 编号 <span class="optional">可选</span>
+                  <input name="pull_request" type="number" min="1" placeholder="例如 42">
+                </label>
+              </div>
+              <label>运行模式
+                <select name="mode" id="review-mode">
+                  <option value="agentic">agentic · 四个真实 LLM 角色</option>
+                </select>
+              </label>
+              <label class="diff-field"><span class="field-label">Unified Diff <span class="field-meta" id="diff-stats" aria-live="polite">0 行，0 字符</span></span>
+                <textarea name="diff" rows="15" spellcheck="false" required placeholder="--- a/app.py&#10;+++ b/app.py&#10;@@ -1 +1 @@&#10;-old_value&#10;+new_value"></textarea>
+              </label>
+              <div class="form-footer">
+                <button class="button" type="submit">开始代码审查</button>
+              </div>
+            </form>
+          </article>
+          <aside class="panel strategy-panel">
+            <h3>GitHub 回写</h3>
+            <p class="muted">管理员可按仓库设置。启用后，完整报告会回写到对应的 PR 提交。</p>
+            <form id="publication-form">
+              <label>仓库<input name="repository" placeholder="owner/repository" maxlength="250" required></label>
+              <label>自动回写<select name="publication"><option value="off">关闭</option><option value="summary">仅摘要</option><option value="inline">摘要与行级评论</option></select></label>
+              <div class="workbench-actions"><button type="button" class="button secondary" id="load-publication">读取配置</button><button class="button secondary" type="submit">保存配置</button></div>
+              <p class="muted" id="publication-result" role="status"></p>
+            </form>
+            <div id="review-result" class="result empty" aria-live="polite">审查结果将在这里显示</div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 任务中心：列表选择驱动右侧报告和当前任务反馈。 -->
+      <section class="view" id="view-tasks" aria-labelledby="page-title">
+        <div class="section-heading">
+          <div><h2>审查任务</h2><p>跟踪任务状态，查看报告并创建安全修复分支。</p></div>
+        </div>
+        <div class="tasks-layout">
+          <article class="panel task-list-panel">
+            <div class="panel-head">
+              <h3>任务列表</h3>
+            </div>
+            <form id="task-filters">
+              <label>仓库<input name="repository" placeholder="owner/repository" maxlength="250"></label>
+              <div class="field-row"><label>PR 编号<input name="pull_request" type="number" min="1"></label>
+                <label>状态<select name="state"><option value="">全部</option><option value="PENDING">等待中</option><option value="PLANNING">规划中</option><option value="EXECUTING">执行中</option><option value="REVIEWING">汇总中</option><option value="PAUSED_BUDGET">预算暂停</option><option value="SUCCESS">已完成</option><option value="FAILED">失败</option><option value="CANCELLED">已取消</option></select></label></div>
+              <div class="workbench-actions"><button class="button secondary" type="submit">筛选</button><button class="button secondary" type="reset">清除</button></div>
+            </form>
+            <div id="all-tasks" class="task-list"><div class="list-loading"></div></div>
+            <nav class="workbench-actions task-pages" aria-label="任务分页"><button class="button secondary" id="task-prev" type="button" disabled>上一页</button><span id="task-page">第 1 页</span><button class="button secondary" id="task-next" type="button" disabled>下一页</button></nav>
+          </article>
+          <article class="panel report-panel">
+            <div class="panel-head">
+              <div><h3 id="task-title">任务报告</h3><div id="task-pr-meta"></div></div>
+              <button class="button danger hidden" id="create-fix">创建修复分支</button>
+            </div>
+            <div id="task-progress" class="workbench-progress" aria-live="polite">选择一个任务查看进度。</div>
+            <div class="workbench-actions">
+              <button class="button secondary hidden" id="confirm-review">接受审查</button>
+              <button class="button secondary hidden" id="cancel-review">取消任务</button>
+              <button class="button secondary hidden" id="resume-review">重试未完成工作</button>
+              <button class="button secondary hidden" id="download-review">导出报告</button>
+            </div>
+            <form id="resume-budget" class="workbench-actions hidden">
+              <label>追加 Token <input name="additional_tokens" type="number" min="1" max="1000000" required value="32000"></label>
+              <button class="button" type="submit">从断点续跑</button>
+            </form>
+            <div id="task-coverage"></div>
+            <div id="fix-result" class="hidden workbench-progress" role="status"></div>
+            <div id="review-workspace" class="review-workspace hidden">
+              <aside class="review-navigator" aria-label="文件与发现">
+                <details open><summary>变更文件 <span id="diff-file-count"></span></summary><div id="diff-files" class="diff-files"></div></details>
+                <div class="finding-filters"><label>严重级别<select id="finding-severity"><option value="">全部</option><option value="critical">严重</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
+                  <label>处理状态<select id="finding-state"><option value="">全部</option><option value="pending">待处理</option><option value="accepted">已采纳</option><option value="false_positive">误报</option><option value="fixed">已修复</option></select></label></div>
+                <div id="finding-list" aria-label="发现列表"></div>
+              </aside>
+              <section class="diff-pane" aria-labelledby="diff-title">
+                <div class="diff-bar"><h4 id="diff-title">代码变更</h4><div class="diff-pagination"><button class="button secondary" id="diff-prev" type="button" disabled>上页</button><button class="button secondary" id="diff-next" type="button" disabled>下页</button></div></div>
+                <p id="diff-status" class="muted" role="status">选择文件或发现查看代码。</p>
+                <div id="diff-code" class="diff-code" tabindex="0" aria-label="代码变更，旧行号和新行号"></div>
+              </section>
+            </div>
+            <div id="task-report" class="workbench-report"></div>
+            <!-- 只有成功且包含报告的任务才显示此反馈区域。 -->
+            <section class="feedback-panel hidden" id="feedback-panel" aria-labelledby="feedback-title">
+              <div class="feedback-head">
+                <div>
+                  <h3 id="feedback-title">审查反馈</h3>
+                  <p>标记误报、漏报或坏修复；反馈会进入演进实验室的候选评测队列。</p>
+                </div>
+                <span class="feedback-scope">仅本任务</span>
+              </div>
+              <form id="feedback-form">
+                <div class="field-row feedback-fields">
+                  <label>反馈归属 Skill
+                    <select name="skill_name" id="feedback-skill" required>
+                      <option value="llm-review">llm-review（通用审查）</option>
+                    </select>
+                  </label>
+                  <label>反馈类型
+                    <select name="category" id="feedback-category">
+                      <option value="false_positive">误报</option>
+                      <option value="missed_issue">漏报</option>
+                      <option value="bad_fix">坏修复</option>
+                    </select>
+                  </label>
+                  <label>关联审查结论 <span class="optional">可选</span>
+                    <select name="finding_index" id="feedback-finding">
+                      <option value="">不关联已有结论</option>
+                    </select>
+                  </label>
+                </div>
+                <!-- 漏报可手工补充规则与位置，不必依赖已有审查结论。 -->
+                <div class="feedback-missed-fields hidden" id="feedback-missed-fields">
+                  <p>漏报可补充规则和位置，帮助后续候选更准确地学习。</p>
+                  <div class="field-row feedback-location-fields">
+                    <label>规则 ID <span class="optional">可选</span><input name="rule_id" placeholder="例如 SEC-INPUT-VALIDATION"></label>
+                    <label>文件路径 <span class="optional">可选</span><input name="path" placeholder="例如 app/api.py"></label>
+                    <label>行号 <span class="optional">可选</span><input name="line" type="number" min="1" placeholder="42"></label>
+                  </div>
+                </div>
+                <label>说明
+                  <textarea name="note" rows="4" maxlength="2000" required placeholder="说明判断依据、预期行为或修复造成的问题。"></textarea>
+                </label>
+                <div class="form-footer feedback-footer">
+                  <span class="form-hint" id="feedback-hint">提交后可在本任务和演进实验室查看状态。</span>
+                  <button class="button" type="submit">提交反馈</button>
+                </div>
+              </form>
+              <div id="feedback-result" class="feedback-result" aria-live="polite"></div>
+              <div id="task-feedback-history" class="feedback-history" aria-live="polite"></div>
+            </section>
+          </article>
+        </div>
+      </section>
+
+      <!-- Skill 注册中心：展示模型状态和可用技能，并提供重新扫描入口。 -->
+      <section class="view" id="view-skills" aria-labelledby="page-title">
+        <div class="section-heading inline">
+          <div><h2>组件与 Skill 能力</h2><p>区分 LLM Agent、Tool/Scanner 与 Gate，并查看真实模型运行时。</p></div>
+          <button class="button secondary" id="reload-skills">重新扫描 Skills</button>
+        </div>
+        <article class="llm-capability" id="llm-capability" aria-live="polite">
+          <div class="llm-capability-main">
+            <span class="capability-glyph" aria-hidden="true">LLM</span>
+            <div><h3>LLM Review Agent</h3><p id="llm-capability-detail">正在读取模型运行时</p></div>
+          </div>
+          <div class="capability-runtime">
+            <span class="runtime-status is-pending" id="llm-runtime-status">检查中</span>
+            <strong id="llm-runtime-model">Provider 未知</strong>
+          </div>
+        </article>
+        <div class="section-subhead">
+          <h3>动态 Skills</h3>
+          <span>由注册表加载，可独立版本化</span>
+        </div>
+        <div class="cards" id="skill-list"><div class="skill-card loading"></div><div class="skill-card loading"></div></div>
+      </section>
+
+      <!-- 演进实验室：展示数据就绪状态、人工候选、自动反馈学习与最近评测。 -->
+      <section class="view" id="view-evolution" aria-labelledby="page-title">
+        <div class="section-heading"><div><h2>Prompt 与 Skill 版本</h2><p>比较候选与基线。通过验证集和保留集门禁后，由管理员发布。</p></div></div>
+        <div class="workbench-actions" aria-label="版本类型">
+          <label>类型<select id="version-kind"><option value="prompt">Prompt</option><option value="skill">Skill</option></select></label>
+          <label>名称<input id="version-name" value="llm-review" pattern="[a-z0-9_-]+" readonly></label>
+          <button class="button secondary" id="load-versions" type="button">查看版本</button>
+        </div>
+        <p id="evolution-status" class="muted" role="status"></p>
+        <div class="evolution-grid">
+          <article class="panel form-panel">
+            <h3>评测候选</h3>
+            <form id="evolution-form">
+              <label><span id="version-editor-label">候选 Prompt</span><textarea name="prompt" rows="11" spellcheck="false" required></textarea></label>
+              <div class="workbench-actions">
+                <button class="button" type="submit">提交评测</button>
+                <button class="button secondary" id="auto-evolve" type="button">从反馈生成并评测</button>
+              </div>
+            </form>
+            <p id="evolution-result" class="muted" role="status"></p>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><h3>版本历史</h3></div>
+            <div id="version-history" class="task-list"></div>
+          </article>
+        </div>
+        <article id="version-detail" class="panel status-panel hidden"></article>
+        <section class="panel status-panel" aria-labelledby="job-history-title">
+          <div class="panel-head"><h3 id="job-history-title">评测运行</h3></div><div id="evolution-jobs" class="task-list"></div>
+          <div id="evolution-job-detail" role="status"></div>
+        </section>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 认证失败时显示登录层，表单成功后由 app.js 保存令牌。 -->
+  <div class="login-overlay hidden" id="login-overlay">
+    <form class="login-card" id="login-form">
+      <div class="login-brand">
+        <span class="brand-mark">E</span>
+        <span>EvoAgent<small>SECURE CONTROL PLANE</small></span>
+      </div>
+      <h2>登录控制台</h2>
+      <p class="login-lead">使用你的工作区凭据继续。</p>
+      <label>用户名<input name="username" autocomplete="username" required></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
+      <label>租户 ID <span class="optional">可选</span><input name="tenant_id" placeholder="只有一个租户时可留空"></label>
+      <button class="button" type="submit">安全登录</button>
+      <p class="login-error" id="login-error" role="alert"></p>
+    </form>
+  </div>
+
+  <!-- 全局操作提示；aria-live 让辅助技术也能获知反馈。 -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <!-- 放在页面节点之后加载，以便脚本初始化时直接查询和绑定元素。 -->
+  <script src="/assets/app.js?v=20261119.2"></script>
+</body>
+</html>

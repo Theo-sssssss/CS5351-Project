@@ -1,0 +1,59 @@
+# 本地组合运行应用、PostgreSQL 和 Redis；服务名可作为容器间主机名。
+services:
+  # 关系数据库用于任务、轨迹与版本持久化，数据保存在命名卷中。
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: evoagent
+      POSTGRES_USER: evoagent
+      POSTGRES_PASSWORD: evoagent-local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evoagent"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  # Redis Streams 承担异步投递，AOF 将队列写操作持久化到卷。
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  # 应用使用项目 Dockerfile 构建，并通过环境变量选择生产存储和队列后端。
+  evoagent:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      EVOAGENT_HOST: 0.0.0.0
+      EVOAGENT_DATABASE_URL: postgresql://evoagent:evoagent-local@postgres:5432/evoagent
+      EVOAGENT_REDIS_URL: redis://redis:6379/0
+      EVOAGENT_ASYNC_WORKERS: 4
+      EVOAGENT_SKILLS_DIR: /app/skills
+      EVOAGENT_AUTH_REQUIRED: "true"
+      EVOAGENT_AUTH_SECRET: ${EVOAGENT_AUTH_SECRET:-local-only-change-this-secret-123456}
+      EVOAGENT_BOOTSTRAP_ADMIN_USERNAME: ${EVOAGENT_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      EVOAGENT_BOOTSTRAP_ADMIN_PASSWORD: ${EVOAGENT_BOOTSTRAP_ADMIN_PASSWORD:-evoagent-local-admin}
+    # 可选加载本地 .env；上方 environment 中同名配置优先。
+    env_file:
+      - path: .env
+        required: false
+    # 等待数据库和队列的健康检查通过后再启动应用。
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+# 命名卷独立于容器生命周期，重新创建容器时可保留数据。
+volumes:
+  postgres_data:
+  redis_data:
