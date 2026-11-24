@@ -47,7 +47,7 @@ The baseline version uses a single model call. The collaborative increment adds 
 
 
 \section{Software Process}
-The course asks for three Sprints, weekly discussions and a whole-project burndown. We grouped repository activity using the course periods and the version increments visible within those periods. Sprint 1 covers V1. Sprint 2 covers V2 and V3. Sprint 3 covers V4, V5 and the separately selected final snapshot. Weekly development was scoped to Weeks 2--12. The team closes Sprint 3 on 30 November, and Week 13 remains the course window for final delivery. The 27 November Sprint Review and Retrospective remained scheduled when this report was updated on 23 November.
+The course asks for three Sprints, weekly discussions and a whole-project burndown. We grouped repository activity using the course periods and the version increments visible within those periods. Sprint 1 covers V1. Sprint 2 covers V2 and V3. Sprint 3 covers V4, V5 and the separately selected final snapshot. Weekly development was scoped to Weeks 2--12. The team closes Sprint 3 on 30 November, and Week 13 remains the course window for final delivery. The 27 November Sprint Review and Retrospective remained scheduled when this report was updated on 24 November.
 
 \begin{table*}[t]
 \caption{Team-supplied Sprint calendar and repository increments in 2026}
@@ -68,15 +68,24 @@ Sprint 1 focused on the single-call path from a pull request to a saved review r
 
 The technical review of this increment emphasizes the seams between the service, the provider and the report. A small system could make these boundaries inspectable before the role workflow complicated execution. The documented improvement for subsequent work was to keep the visible output contract while adding specialist proposals, independent Critic checks and report evidence. We retained V1 as an implementation baseline. Results from an experiment using a different legacy path are identified separately in the Evaluation section.
 
+\paragraph{Review discussion reconstructed from the 2 October evidence.}
+The technical discussion record follows V1 from configuration and PR URL validation to diff retrieval, the background task, one model call and report display. The later two-test regression supports parsing and normalization. A positive run with a valid URL and a rejection check with an invalid URL were identified as follow-up acceptance items. For the next increment, the record proposes retaining a fixed input diff and adding independent findings checks. This preserves a baseline for evaluating the move to a multi-role workflow. The team confirmed attendance. The available artifacts do not establish a formal acceptance decision.
+
 \subsection{Sprint 2: Collaboration and bounded execution}
 V2 introduced fixed role collaboration, path and added-line checks, role-level accounting, and a view of delivery state [9]. Its backlog and source were uploaded on 18 October. The 6 November Review record can therefore discuss V2 as repository evidence. V3 source was uploaded on 7 November, within the Sprint period ending on 8 November. We record V3 as Sprint-end follow-up. The upload date alone gives no basis for stating that V3 was demonstrated at the preceding Review.
 
 V3 developed the transition from a fixed workflow to bounded tool inspection, budget checks, checkpoints and cancellation [10]. It also strengthened the rule that final synthesis must preserve findings already checked by the Critic. The retrospective technical account identifies the additional model calls, state transitions and provider failures introduced by collaboration. A later regression evaluation recorded 33 passing tests for the local V2 snapshot and 54 for V3. Those runs document later verification. They do not serve as sign-offs for the 6 November meeting.
 
+\paragraph{Review discussion reconstructed from the 6 November evidence.}
+The V2 evidence supports separate inspection of role traces, report findings and GitHub comment delivery. The reconstructed discussion considers whether a report should admit findings with a wrong path, a non-added line, mismatched quoted evidence or duplicate evidence. It also separates successful report generation from successful posting. The carry-forward items are to compare the single-call and collaborative workflows on a frozen diff and to capture completed work before interruption. The 7 November V3 upload records Sprint-end progress on those runtime controls. The later V2 and V3 regressions, with 33 and 54 passing tests respectively, support the released snapshots. They do not establish which build was demonstrated on 6 November.
+
 \subsection{Sprint 3: Adaptive context, evolution and release}
 Planning on 9 November assigned work on bounded risk context, scoped feedback, skills, evaluation, recovery and release. The V4 restored snapshot was uploaded on 21 November, and V5 was uploaded on 23 November at commit \texttt{faf93a1}. The separate selected delivery branch contains commit \texttt{b9a63e3}, uploaded on 21 November. This chronology leaves V5 as a development reference and the selected branch as the release identity. We do not assign a version number to the selected branch. The restored V4 and V5 packages contain shared infrastructure. Their stated version scope determines which features are attributed to each increment.
 
 The 27 November Review and Retrospective were planned to verify the selected source, discuss the staged evaluation, inspect batch coverage and recovery, and confirm outstanding delivery work. The technical evidence prepared for those discussions includes 70 passing V4 tests after maintenance, 70 for V5 and 84 for the packaged final source. The offline study rejected an evolved skill candidate that did not improve the matched holdout. A separate prompt replay showed a numerical gain on synthetic fixtures, with production activation blocked by the provenance gate. The live pilot recorded one completed batched run and one legacy budget failure. A future meeting outcome is deliberately left open.
+
+\paragraph{27 November Review and Retrospective agenda.}
+Tianyi Jiang and Xinyu Zhang are assigned to present the V4 context limits, isolation checks and corrected regression run. Jianyu Zhou and Siye Tu are assigned to explain the lack of holdout F1 gain in the 100-case Skill comparison and the separate 130-case prompt replay that passed the numeric threshold but failed the production provenance gate. Jiayu Zhu is assigned to demonstrate partial coverage, resume and revision confirmation using the deterministic trace. Jiexuan Shen is assigned to reconcile the pinned release, its 84-test evidence and the incomplete legacy pilot run before the team decides on acceptance. The agenda identifies proposed presenters. Attendance, adopted actions and sign-off will be recorded after the meeting.
 
 \section{EVALUATION}
 \subsection{Automated Acceptance Checks}
@@ -138,7 +147,11 @@ The contribution record uses the four repository backlogs as evidence of assigne
 \par \textbf{Xinyu Zhang}. V1: Configuration and webhook deduplication (SB-01, SB-07). V2: Frontend and comparison entry (SB10--SB11). V3: Repair-policy and patch work packages (10--12). V4: Tenant isolation and tool permissions (T10--T12). V5 and final delivery assignment: Own packaged regression and access-control verification. Preserve before/after logs and rejected actions.
 \par \textbf{Jiexuan Shen}. V1: Asynchronous task lifecycle (SB-06). V2: Workflow design (SB01, SB03, SB05). V3: Verification gate and reporting (13--15). V4: Task budgets, checkpoints and cancellation (T13--T15). V5 and final delivery assignment: Own final runtime and process evidence. Reconcile task states, incomplete coverage and Sprint acceptance records.
 
+The final handoff allocates concrete outputs across the six members. Tianyi Jiang checks archive identity and clean setup. Jianyu Zhou prepares an evidence record for the offline splits, negative Skill result and paired PR run. Jiayu Zhu records the review path from submission through complete coverage and confirmation. Siye Tu documents candidate evaluation, provenance and the conditions for activation. Xinyu Zhang checks access boundaries and retains the V4 maintenance and packaged-release regression logs. Jiexuan Shen reconciles the runtime trace, partial coverage and decisions from the release Review. These are final delivery assignments. The V1--V4 task identifiers above are historical backlog ownership. Individual completion and authorship can be confirmed with the corresponding evidence and each member's statement.
+
 Hours remain team planning estimates. Each member owns an identifiable output and can attach completed-work evidence for their contribution declaration. Biographies and personal reflections require member input.
+
+The detailed records are maintained alongside this report. See the \href{https://github.com/Theo-sssssss/CS5351-Project/tree/6d5354a55d89e5d0cda04429d8007028f9ced160/docs/final-submission/process}{Sprint discussions and contribution traceability records}.
 
 \section{System and Acceptance Walkthrough}
 \subsection{From a pull request to a report}
