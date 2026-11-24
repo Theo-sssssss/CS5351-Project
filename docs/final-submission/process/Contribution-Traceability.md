@@ -13,6 +13,17 @@ The sources below record backlog ownership. A planned owner is evidence of assig
 
 The six final packages target comparable scope. These proposed responsibilities cover identifiable outputs and do not retroactively allocate authorship. Each member should add links to their completed work, the confirmed hours if available, a biography and a personal reflection.
 
+## Work performed at project level and individual responsibility
+
+The repository and tests establish project-level outcomes. The bullets pair those outcomes with the corresponding named assignments. The V5 and final work below specifies an owner and a verifiable output for this handoff. Each member should confirm implementation authorship and individual completion separately.
+
+- **Tianyi Jiang.** V1 assignment covered obtaining PR metadata and the diff. V2 assigned QA, smoke testing and Scrum tracking. V3 assigned runtime transitions, budgets and recovery. V4 assigned risk ranking, context selection and boundary tests. The final reproducibility package should match the selected source ZIP and manifest and retain the setup and regression instructions.
+- **Jianyu Zhou.** V1 assignment covered excluded local artifacts and the fixed-prompt review call. V2 covered the diff gate and reporting safeguards. V3 assigned tool contracts and read-only diff inspection. V4 assigned repository feedback storage, bounded recall and expiration. The final evaluation package should record splits, provenance, the negative Skill result, the prompt replay and the paired public PR run.
+- **Jiayu Zhu.** V1 assignment covered validating submitted PR URLs. V2 covered GitHub integration and task storage. V3 covered UI and API controls, acceptance tests and the demo. V4 covered integration of context, memory and skills. The final walkthrough should record submission, partial coverage, resume, complete coverage and report confirmation.
+- **Siye Tu.** V1 assignment covered serving the dashboard and starting the local service. V2 covered the model client and specialist integration. V3 covered finding evidence, external input boundaries and diff trimming. V4 covered skill manifests and role selection. The final evolution package should document the candidate evaluation, provenance decision and distinction between eligibility and activation.
+- **Xinyu Zhang.** V1 assignment covered environment configuration and webhook deduplication. V2 covered the dashboard and comparison control. V3 records the assigned policy and patch work packages. V4 covered tenant and repository isolation and associated regression checks. The final regression package should retain the V4 before and after results and the packaged-source 84-test evidence.
+- **Jiexuan Shen.** V1 assignment covered asynchronous task state. V2 covered the Lead, specialists, Critic and synthesis workflow design. V3 covered verification and reporting. V4 covered budget, cancellation and resume handling. The final process evidence should link the runtime trace, partial coverage and release acceptance record while preserving any unresolved outcome.
+
 ## Repository workbooks
 
 - [V1](https://github.com/Theo-sssssss/CS5351-Project/blob/faf93a1/docs/EvoAgent_V1_Sprint_Backlog.xlsx)

@@ -53,6 +53,17 @@ V1 implements the submission-to-report workflow, SQLite task storage, a minimal 
 | Restored V1 source | [258b304](https://github.com/Theo-sssssss/CS5351-Project/commit/258b304f041af6457af73f247838c84aef9e013d) |
 | V1 backlog | [d0a3b98](https://github.com/Theo-sssssss/CS5351-Project/commit/d0a3b98b9112ad6ef5f383a3381a7f93c1692850) |
 
+### Reconstructed technical discussion for 2 October
+
+| Topic | What the available work showed | Follow-up to confirm |
+| --- | --- | --- |
+| Intake and configuration | V1 established a local service and dashboard. The backlog separated environment configuration, URL validation, PR metadata and diff retrieval. Untracked credentials and database files were part of the setup boundary. | Verify a valid URL and an invalid URL against the same local release and record the observed task responses. |
+| One-pass review | A submitted change flowed into a background task, one configured model call and a structured report. The task lifecycle and HTTP status were visible independently of the report. | Preserve V1 as the baseline and retain a frozen diff for the next comparison. |
+| What counts as a valid finding | Report fields made results inspectable. The two later V1 tests cover parsing and normalization. They do not resolve whether a model's claim corresponds to a real issue on GitHub. | Introduce programmatic path and added-line evidence checks and separate them from assessment of correctness. |
+| Scope for the next increment | One model response provided limited visibility into why a finding was produced. The next version introduced a Lead, specialists and Critic with individual execution records. | Use the named V2 workflow, integration and QA assignments in the contribution record. |
+
+The October discussion is reconstructed from the V1 repository and backlog. The two-test result is retrospective. The contemporaneous live run and individual approval remain unrecorded.
+
 ### Verification and acceptance scope
 
 The handoff archive records two V1 tests passing in a retrospective regression on 21 November. This supports the archived snapshot's tested parsing behavior; it does not date Sprint 1 acceptance or prove live GitHub and LLM integration at that time.

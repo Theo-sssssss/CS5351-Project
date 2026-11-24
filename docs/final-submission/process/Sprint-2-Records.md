@@ -52,6 +52,18 @@ V3 was uploaded on 7 November, one day after the specified Review. It is include
 | V2 source | [f231554](https://github.com/Theo-sssssss/CS5351-Project/commit/f2315543fd577c573d1e629d9e39750107047a40), 18 October |
 | V3 source | [aefe1f7](https://github.com/Theo-sssssss/CS5351-Project/commit/aefe1f741cebf4e840b76726c84be5668a476c1d), 7 November |
 
+### Reconstructed technical discussion for 6 November
+
+| Topic | What the available work showed | Follow-up to confirm |
+| --- | --- | --- |
+| V2 role workflow | V2 used a shared report schema, a Lead plan, two specialist calls, a Critic pass and final synthesis. The user could inspect role traces and compare the baseline and collaborative modes. | For the same diff, compare completion, calls and findings. Retain failure outcomes. |
+| Location and quotation checks | The gate screened invalid paths, non-added lines, mismatched code evidence and duplicate findings. A passing location check establishes correspondence to the source line. | Keep the report distinction between traceability and semantic correctness. |
+| Service and delivery boundaries | The backlog assigns GitHub intake and persistence separately from dashboard controls and reporting. A completed review and success posting a comment are tracked independently. | Preserve that distinction in acceptance checks and capture explicit errors from each layer. |
+| V3 Sprint-end follow-up | The 7 November upload followed the Review. It added bounded read-only context, limits and checkpoint handling. Later regressions recorded 33 V2 and 54 V3 passes. | Treat V3 as Sprint-end evidence. Ask the team separately whether any pre-upload version was shown at the Review. |
+| Retrospective issue | Collaboration increases calls and the number of intermediate states. Limits and checkpoint reuse reduce repeated work after interruption. | In Sprint 3, check bounded context, scoped memory and reuse of completed work under interruption. |
+
+These are evidence-based topics for the Review and Retrospective record. The 33 and 54 test counts are subsequent regression evidence. Adoption of each follow-up and formal acceptance remain open.
+
 ### Verification and acceptance scope
 
 The handoff records retrospective regressions on 21 November with 33 tests passing for V2 and 54 for V3. Covered behaviors include collaboration stages, finding gates, execution limits, and recovery. These logs establish later snapshot checks rather than the dates of historical Sprint acceptance.

@@ -63,6 +63,22 @@ The 100-case controlled offline experiment reported F1 of 90.41% for both the fu
 
 A frozen public documentation PR was also reviewed using a real model. The batched engine completed in 27.415 seconds, used 9,262 recorded tokens, and covered one of one batches. The legacy engine exceeded its task execution budget after 45.876 seconds of client elapsed time. There was no independent ground truth, so this pilot establishes a recorded execution outcome rather than a comparative accuracy or general reliability result.
 
+### Discussion agenda for 27 November
+
+| Topic | Evidence to show | Question for the team | Proposed owner |
+| --- | --- | --- | --- |
+| V4 context and memory | V4 risk ranking, bounded context and scoped memory. The restored snapshot's 70-test regression passed after fixture and assertion maintenance. | Which context and isolation checks should be included in the final acceptance record? | Tianyi Jiang and Xinyu Zhang |
+| V5 controlled evolution | 100-case comparison with no evolved Skill holdout F1 gain. Separate 130-case prompt replay improved synthetic F1, with production activation blocked. | Can the report state the offline gains and activation outcome with their respective datasets and limits? | Jianyu Zhou and Siye Tu |
+| Final user flow | The deterministic trace covers budget pause, completion after resume and report confirmation. The live documentation PR is separate execution evidence. | Which scenario will the team use for the presentation, and who will confirm the displayed report revision? | Jiayu Zhu |
+| Release and incomplete outcomes | Pinned source snapshot b9a63e3, archived 84-test result, live legacy budget failure and successful batched run. | Is the selected source approved for submission, and which limitations should follow it into the handoff? | Jiexuan Shen |
+
+### Record after the meeting
+
+- Attendance and facilitator: pending.
+- Demonstrated scenario, source commit and observed outcome: pending.
+- Release acceptance, accepting members and exceptions: pending.
+- Adopted retrospective action, owner and due date: pending.
+
 ### Proposed acceptance position
 
 The available snapshots support review of the implemented development scope. The submission source is confirmed as the delivery-branch snapshot. At the 27 November Review, record the team's acceptance, the selected release's reproducibility result, remaining delivery work, and any exceptions. Track final delivery actions through the 30 November Sprint close. The final Review outcome remains pending until the meeting takes place.
