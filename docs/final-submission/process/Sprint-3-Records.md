@@ -98,3 +98,7 @@ The adopted delivery follow-up is presentation rehearsal, confirmation of offici
 ## Current member completion record
 
 The [V5 contribution table](Contribution-Traceability.md) links each member's completed V5 task to source/tests and confirmed actual hours: Siye Tu 8 h, Jianyu Zhou 6 h, Xinyu Zhang 4 h, Tianyi Jiang 6 h, Jiayu Zhu 7 h and Jiexuan Shen 5 h (36 V5 hours). All members total 36 h each across V1–V5. Technical reruns validate the product and are distinct from individual authorship evidence.
+
+## Separate version records
+
+- V4: [Review](V4-Review.md) and [Retrospective](V4-Retrospective.md).

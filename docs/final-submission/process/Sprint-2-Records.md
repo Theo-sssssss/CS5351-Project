@@ -116,3 +116,8 @@ The original Sprint 2 formal acceptance decision and any pre-upload V3 demonstra
 ## Current delivery cross-reference
 
 V1–V3 remain historical increment references. The refreshed V5 source is [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5), with 89 current-source regression passes and separately reported offline metrics. The [completed V5 record](V5-Sprint-Backlog-Review-Retrospective.md) and [V5 member contributions](Contribution-Traceability.md) document the final increment. The report remains local at the user's request.
+
+## Separate version records
+
+- V2: [Review](V2-Review.md) and [Retrospective](V2-Retrospective.md).
+- V3: [Review](V3-Review.md) and [Retrospective](V3-Retrospective.md).
