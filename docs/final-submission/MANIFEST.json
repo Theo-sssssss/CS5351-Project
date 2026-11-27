@@ -7,8 +7,8 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 1979,
-      "sha256": "a455187d9774a4671b7f3f8be2587c0d25c6825ceaa12ea8bf3f3b8e259f9b71"
+      "bytes": 1925,
+      "sha256": "a819378a979d027d3b6dfb7bbc330118d8a957802d8877e98e25a55553eda024"
     },
     {
       "path": "RUN-AND-VERIFY.md",
@@ -29,11 +29,6 @@
       "path": "editable/EvoAgent-Milestone-Burndown.pdf",
       "bytes": 2751,
       "sha256": "4ab1edb758236f19abc02c64e88f9a425c0738bceaa6bf075dadb6a6a65ca62d"
-    },
-    {
-      "path": "editable/Presentation-Notes.md",
-      "bytes": 2708,
-      "sha256": "6ba2ae3e355feee702650a50563d48805833cc9fc20e695ebe45d69d11bb33f4"
     },
     {
       "path": "evidence/evaluation/README.md",
@@ -247,8 +242,8 @@
     },
     {
       "path": "process/Contribution-Traceability.md",
-      "bytes": 9658,
-      "sha256": "4d94c21e84915970ae4dedcd694cb3dd55d39c9cd497784edf5c2412ad23c94f"
+      "bytes": 9601,
+      "sha256": "8fe2fd4673a56fc2d75ad35d8779d591437fea610024bf4631a4b92a7317bebe"
     },
     {
       "path": "process/Evidence-Index.md",

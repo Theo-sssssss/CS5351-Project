@@ -8,7 +8,7 @@ The report PDF, LaTeX source and report-specific audit files are intentionally w
 
 - [Verified V5 source](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5) (commit `e48ee634b7f609a89f761adc8b7a516cb8fcba31`)
 - [Completed V5 Review and Retrospective](process/V5-Sprint-Backlog-Review-Retrospective.md)
-- [Presentation](submission/EvoAgent-Presentation.pptx), [presentation PDF](submission/EvoAgent-Presentation.pdf), and [speaking notes](editable/Presentation-Notes.md)
+- [Presentation](submission/EvoAgent-Presentation.pptx), [presentation PDF](submission/EvoAgent-Presentation.pdf)
 - [Demo video](submission/EvoAgent-Demo.mp4)
 - [Tested source archive](submission/EvoAgent-Final-Source.zip)
 - [Run and verify](RUN-AND-VERIFY.md)
