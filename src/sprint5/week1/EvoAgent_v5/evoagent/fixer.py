@@ -1,3 +1,5 @@
+# 受限规则修复器：只处理显式支持的规则，并通过语法检查和修复验证后创建 Draft PR。
+
 import ast
 import re
 from datetime import datetime, timezone
@@ -7,9 +9,11 @@ from .github import GitHubClient
 from .verifier import RepairVerifier
 
 
+# 仅支持已知规则的受限修复器，不对未知问题猜测修改方式。
 class SafeFixer:
     """Creates conservative fixes on a dedicated branch; never writes to the PR head."""
 
+    # 只对明确支持的规则生成单行修复，无法安全处理时不提供替换。
     def propose_line(self, line: str, finding: dict) -> str:
         rule = finding.get("rule_id")
         if rule == "REL-DEBUG-PRINT":
@@ -22,6 +26,7 @@ class SafeFixer:
                 return '%s%s = os.environ["%s"]' % (match.group(1), match.group(2), match.group(2).upper())
         return line
 
+    # 根据问题位置应用支持的规则修复，Python 文件优先使用语法树转换。
     def apply(self, content: str, findings: List[dict], path: str) -> Dict[str, object]:
         if path.endswith(".py") and hasattr(ast, "unparse"):
             structured = self._apply_python_ast(content, findings, path)
@@ -43,6 +48,7 @@ class SafeFixer:
             lines.insert(0, "import os")
         return {"content": "\n".join(lines) + ("\n" if content.endswith("\n") else ""), "rules": changed}
 
+    # 在 Python AST 上做受限节点替换，避免纯字符串替换误伤其他表达式。
     def _apply_python_ast(
         self, content: str, findings: List[dict], path: str,
     ) -> Dict[str, object]:
@@ -53,7 +59,9 @@ class SafeFixer:
         changed = []
         needs_os = False
 
+        # 针对已知规则的 Python AST 转换器。
         class Transformer(ast.NodeTransformer):
+            # 访问表达式语句，应用当前规则允许的语法树修复。
             def visit_Expr(inner, node):
                 if (
                     (node.lineno, "REL-DEBUG-PRINT") in targets
@@ -65,6 +73,7 @@ class SafeFixer:
                     return None
                 return inner.generic_visit(node)
 
+            # 访问调用表达式，按支持的规则修改目标调用。
             def visit_Call(inner, node):
                 node = inner.generic_visit(node)
                 if (node.lineno, "SEC-SUBPROCESS-SHELL") in targets:
@@ -78,6 +87,7 @@ class SafeFixer:
                             changed.append("SEC-SUBPROCESS-SHELL")
                 return node
 
+            # 访问赋值语句，按支持的规则调整赋值内容。
             def visit_Assign(inner, node):
                 nonlocal needs_os
                 node = inner.generic_visit(node)
@@ -120,9 +130,11 @@ class SafeFixer:
         compile(value, path, "exec")
         return {"content": value, "rules": sorted(set(changed))}
 
+    # 注入修复验证器，未提供时使用默认验证实现。
     def __init__(self, verifier: RepairVerifier = None):
         self.verifier = verifier or RepairVerifier()
 
+    # 获取 PR 文件并尝试受限修复，通过验证后创建修复分支和 Draft PR。
     def create_fix_commits(self, client: GitHubClient, repository: str, pull_request: int, report: dict) -> dict:
         pull = client.get_pull_request(repository, pull_request)
         source_ref = pull["head"]["ref"]

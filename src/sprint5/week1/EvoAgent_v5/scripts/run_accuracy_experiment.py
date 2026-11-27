@@ -1,3 +1,5 @@
+# 准确率实验入口：解析数据集与模型选项，执行受控或真实评测并保存报告。
+
 """Run experiment one: controlled Harness validation and optional real-PR accuracy."""
 import argparse
 import json
@@ -15,6 +17,7 @@ from evoagent.evaluation_v2 import ProductArmReviewer  # noqa: E402
 from evoagent.llm import JsonChatClient  # noqa: E402
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Evaluate code-review accuracy on the 100-case controlled set and real PRs."

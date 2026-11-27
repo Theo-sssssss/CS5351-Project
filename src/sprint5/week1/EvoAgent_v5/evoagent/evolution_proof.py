@@ -1,3 +1,5 @@
+# 提示词演进验证实验：用可重复的规则回放检验反馈学习，并输出指标与 Markdown 报告。
+
 """Auditable offline proof for feedback-driven prompt evolution.
 
 This module deliberately uses a deterministic prompt-policy reviewer.  It proves
@@ -31,16 +33,19 @@ DEFAULT_PROMPT_DATASET = os.path.abspath(os.path.join(
 ))
 
 
+# 读取提示词演进实验使用的固定数据集。
 def load_prompt_evolution_cases(dataset_path: str = DEFAULT_PROMPT_DATASET) -> List[dict]:
     """Load the checked-in 130-case prompt replay corpus."""
     return load_jsonl(dataset_path)
 
 
+# 保留历史调用接口，实际读取固定数据集以保持实验可重复。
 def generate_prompt_evolution_cases() -> List[dict]:
     """Backward-compatible name for loading the pre-generated corpus."""
     return load_prompt_evolution_cases()
 
 
+# 将案例逐条写入 UTF-8 JSONL，供其他评测脚本复用。
 def write_jsonl(cases: Iterable[dict], path: str) -> None:
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as handle:
@@ -48,17 +53,20 @@ def write_jsonl(cases: Iterable[dict], path: str) -> None:
             handle.write(json.dumps(case, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+# 按提示词规则标记执行确定性审查的实验替身。
 class PromptPolicyReviewer(Reviewer):
     """One reviewer whose specialist focus is selected only by its prompt version."""
 
     name = "prompt-policy-reviewer"
 
+    # 从提示词提取可识别的策略标记，构造确定性的实验审查规则。
     def __init__(self, prompt: str):
         self.prompt = prompt
         self.focus_rules: Set[str] = set(FOCUS_RULE.findall(prompt))
         self.local = LocalRuleReviewer()
         self.context = ContextRuleReviewer()
 
+    # 按提示词中的受控规则标记选择审查策略，用于确定性验证反馈学习。
     def review(self, diff: str, parsed) -> List[Finding]:
         findings = list(self.local.review(diff, parsed))
         findings.extend(
@@ -72,6 +80,7 @@ class PromptPolicyReviewer(Reviewer):
         return list(deduplicated.values())
 
 
+# 把案例转换成提示词回放需要的输入与期望标签结构。
 def _evolution_case(case: dict) -> dict:
     expected = [
         {
@@ -91,10 +100,12 @@ def _evolution_case(case: dict) -> dict:
     }
 
 
+# 计算提示词内容指纹，将实验结果绑定到具体输入版本。
 def _prompt_sha256(prompt: str) -> str:
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
 
+# 将基线或候选的错误与漏报转成后续演进可使用的反馈。
 def _collect_feedback(store: TaskStore, cases: Iterable[dict], prompt: str) -> List[dict]:
     reviewer = PromptPolicyReviewer(prompt)
     feedback = []
@@ -128,6 +139,7 @@ def _collect_feedback(store: TaskStore, cases: Iterable[dict], prompt: str) -> L
     return feedback
 
 
+# 计算候选相对基线的指标变化，供报告展示改进或退步。
 def _metric_delta(candidate: dict, baseline: dict) -> dict:
     names = (
         "score", "precision", "recall", "f1", "severity_accuracy",
@@ -139,6 +151,7 @@ def _metric_delta(candidate: dict, baseline: dict) -> dict:
     }
 
 
+# 按固定数据划分收集反馈、提出候选并比较保留集结果，输出可复核的实验记录。
 def run_prompt_evolution_proof(dataset_path: str, database_path: str) -> Dict[str, Any]:
     """Run a fresh, reproducible prompt-version evolution experiment."""
     cases = load_jsonl(dataset_path)
@@ -260,10 +273,13 @@ def run_prompt_evolution_proof(dataset_path: str, database_path: str) -> Dict[st
     }
 
 
+# 把实验配置、结果和改进幅度渲染为便于阅读的 Markdown。
 def render_markdown(report: Dict[str, Any]) -> str:
+    # 将比例转换为百分比字符串，统一报告中的显示格式。
     def pct(value: float) -> str:
         return "%.2f%%" % (100.0 * float(value))
 
+    # 生成一行实验对比数据，统一各指标的展示格式。
     def row(label: str, key: str, block: dict) -> str:
         return "| %s | %s | %s | %+.2f pp |" % (
             label, pct(block["baseline"][key]), pct(block["candidate"][key]),
@@ -343,6 +359,7 @@ def render_markdown(report: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+# 将实验结果写入机器可读文件和 Markdown 报告。
 def write_report(report: Dict[str, Any], output_dir: str) -> Dict[str, str]:
     os.makedirs(output_dir, exist_ok=True)
     json_path = os.path.join(output_dir, "prompt-evolution-proof.json")

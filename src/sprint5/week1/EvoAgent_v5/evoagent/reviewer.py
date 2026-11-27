@@ -1,25 +1,37 @@
-import json
+# 审查器接口与实现：提供本地规则、领域规则、模型审查和多个审查器的结果合并。
+
+import ast
 import hashlib
+import json
 import re
 import socket
 import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
+from itertools import groupby
 from typing import Any, Dict, List, Optional
 
 from .diff_parser import ParsedDiff
 from .finding_identity import canonical_cwe, canonical_identity
 from .models import Finding, Severity
+from .python_guard_rules import scan_removed_guards
+from .review_batches import parse_changes
 
 
+ZERO_DIVISOR_GUARD_RULE = "COR-ZERO-DIVISOR-GUARD"
+
+
+# 审查器抽象接口，统一规则和模型实现的调用方式。
 class Reviewer(ABC):
     name = "reviewer"
 
+    # 定义审查器接口：接收原始 Diff 和解析结果，返回结构化问题列表。
     @abstractmethod
     def review(self, diff: str, parsed: ParsedDiff) -> List[Finding]:
         raise NotImplementedError
 
 
+# 对 Diff 执行内置风险规则的确定性扫描器。
 class LocalRuleReviewer(Reviewer):
     name = "local-rules"
     domains = ("security", "reliability", "correctness")
@@ -29,58 +41,59 @@ class LocalRuleReviewer(Reviewer):
             "SEC-EVAL",
             Severity.CRITICAL,
             re.compile(r"\b(eval|exec)\s*\("),
-            "动态代码执行可能导致注入",
-            "新增代码调用了动态执行函数；当参数可被外部影响时，攻击者可能执行任意代码。",
-            "移除动态执行；使用显式解析器、命令映射表或严格白名单处理输入。",
-            "加入恶意表达式与边界输入测试，断言输入不会被当作代码执行。",
+            "Dynamic code execution may lead to code injection",
+            "Added code invokes dynamic execution; if input can be influenced externally, attackers may execute arbitrary code.",
+            "Remove dynamic execution; use an explicit parser, command dispatch table, or strict allowlist.",
+            "Add tests with malicious expressions and boundary inputs asserting input is never executed as code.",
         ),
         (
             "SEC-SUBPROCESS-SHELL",
             Severity.HIGH,
             re.compile(r"\bshell\s*=\s*True\b"),
-            "Shell 调用存在命令注入风险",
-            "shell=True 会扩大参数拼接造成命令注入的风险。",
-            "使用参数数组并保持 shell=False；对允许值进行白名单验证。",
-            "加入包含空格、分号与命令替换字符的输入测试。",
+            "Shell invocation introduces command injection risk",
+            "Passing shell=True expands argument concatenation into a command injection surface.",
+            "Pass an argument list with shell=False and validate allowed values against an allowlist.",
+            "Add tests with spaces, semicolons, and command-substitution characters in input.",
         ),
         (
             "SEC-HARDCODED-SECRET",
             Severity.HIGH,
             re.compile(r"(?i)\b(password|passwd|api[_-]?key|secret|token)\b\s*=\s*['\"][^'\"]{4,}['\"]"),
-            "疑似硬编码凭据",
-            "凭据进入代码仓库后可能通过历史记录、构建日志或制品泄露。",
-            "从密钥管理服务或环境变量读取，并立即轮换已经提交的凭据。",
-            "测试缺少配置时安全失败，且日志不会输出凭据。",
+            "Potential hardcoded credential in source",
+            "Secrets committed to source can leak through Git history, build logs, or packaged artifacts.",
+            "Load credentials from a secret manager or environment variables and rotate any exposed values immediately.",
+            "Test that missing configuration fails safely and logs never emit secret values.",
         ),
         (
             "SEC-SQL-CONCAT",
             Severity.HIGH,
             re.compile(r"(?i)(execute|query)\s*\(\s*(f['\"]|['\"].*(\+|%))"),
-            "SQL 语句疑似动态拼接",
-            "将外部数据拼接到 SQL 中可能产生 SQL 注入。",
-            "改用驱动提供的参数化查询与占位符。",
-            "加入引号、注释符和布尔表达式等注入载荷测试。",
+            "SQL query appears dynamically concatenated",
+            "Interpolating or concatenating external data into SQL strings can cause SQL injection.",
+            "Switch to parameterized queries with driver placeholders.",
+            "Add tests with quotes, SQL comments, and boolean injection payloads.",
         ),
         (
             "REL-EMPTY-EXCEPT",
             Severity.MEDIUM,
             re.compile(r"^\s*except\s*(Exception\s*)?:\s*(pass)?\s*$"),
-            "异常被宽泛捕获",
-            "宽泛捕获会隐藏真实故障，使调用方误以为操作成功。",
-            "仅捕获可处理的异常，记录必要上下文，并让不可恢复错误向上传播。",
-            "加入依赖失败测试，断言错误可观察且不会返回伪成功。",
+            "Broad exception is silently swallowed",
+            "Broad empty except blocks hide real failures and mislead callers into assuming success.",
+            "Catch only specific recoverable exceptions, log context, and let unrecoverable failures propagate.",
+            "Add a failure-path test asserting errors remain observable instead of returning false success.",
         ),
         (
             "REL-DEBUG-PRINT",
             Severity.LOW,
             re.compile(r"\b(print\s*\(|console\.log\s*\()"),
-            "新增调试输出",
-            "直接输出可能污染服务日志或意外暴露运行数据。",
-            "删除调试输出，或改用带级别和脱敏策略的结构化日志。",
-            "验证正常请求不会产生包含敏感值的非预期输出。",
+            "Debug output added in production code",
+            "Direct stdout logging can pollute service logs or inadvertently expose runtime data.",
+            "Remove debug prints or replace with structured logging at an appropriate level with redaction.",
+            "Verify normal requests emit no unintended stdout containing sensitive values.",
         ),
     ]
 
+    # 扫描新增行，并对明确的保护移除比较变更前后的表达式。
     def review(self, diff: str, parsed: ParsedDiff) -> List[Finding]:
         findings: List[Finding] = []
         seen = set()
@@ -115,61 +128,117 @@ class LocalRuleReviewer(Reviewer):
                             source="local-rule-scanner",
                         )
                     )
-        return findings
+        return findings + self._python_guard_regressions(diff, parsed)
 
+    @staticmethod
+    def _python_guard_regressions(diff: str, parsed: ParsedDiff) -> List[Finding]:
+        if not any(path.endswith(".py") for path in parsed.files):
+            return []
+        try:
+            rows, _ = parse_changes(diff)
+        except ValueError:
+            return []  # The legacy parser also accepts incomplete hunks.
 
-class DomainRuleReviewer(Reviewer):
-    """Independent deterministic specialist backed by an explicit rule policy."""
-
-    rule_ids = frozenset()
-    domains = ()
-
-    def review(self, diff: str, parsed: ParsedDiff) -> List[Finding]:
-        findings: List[Finding] = []
-        seen = set()
-        rules = [item for item in LocalRuleReviewer.RULES if item[0] in self.rule_ids]
-        for line in parsed.added_lines:
-            if line.path.endswith((".lock", ".min.js", ".map")):
+        findings = []
+        for _, hunk in groupby(rows, key=lambda row: row.hunk):
+            hunk = list(hunk)
+            if not hunk[0].path.endswith(".py"):
                 continue
-            for rule_id, severity, pattern, title, explanation, fix, test in rules:
-                identity = (rule_id, line.path, line.line)
-                if pattern.search(line.content) and identity not in seen:
-                    seen.add(identity)
-                    findings.append(Finding(
-                        rule_id=rule_id, cwe=canonical_cwe(rule_id), severity=severity, title=title,
-                        explanation=explanation, path=line.path, line=line.line,
-                        evidence=line.content.strip()[:240], fix=fix, test=test,
-                        confidence=0.9,
-                        evidence_refs=[{
-                            "evidence_id": "local-rule:%s" % hashlib.sha256(
-                                (rule_id + line.path + str(line.line) + line.content).encode("utf-8")
-                            ).hexdigest()[:16],
-                            "tool": "local-rule-scanner", "rule_id": rule_id,
-                            "path": line.path, "line": line.line,
-                        }],
-                        source="local-rule-scanner",
-                    ))
+            findings.extend(scan_removed_guards(hunk))
+            for changed, block in groupby(hunk, key=lambda row: row.side != " "):
+                if not changed:
+                    continue
+                pair = list(block)
+                if len(pair) != 2 or [row.side for row in pair] != ["-", "+"]:
+                    continue
+                old, new = pair
+                divisor = _removed_divisor_guard(old.text, new.text)
+                if divisor is None:
+                    continue
+                evidence_id = hashlib.sha256(
+                    repr((new.path, old.line, old.text, new.line, new.text)).encode("utf-8")
+                ).hexdigest()[:16]
+                findings.append(Finding(
+                    rule_id=ZERO_DIVISOR_GUARD_RULE,
+                    cwe=canonical_cwe(ZERO_DIVISOR_GUARD_RULE),
+                    severity=Severity.MEDIUM,
+                    title="Removed zero-divisor guard can raise ZeroDivisionError",
+                    explanation=(
+                        f"This return previously used a fallback when {divisor} was zero. "
+                        f"It now divides by {divisor} directly, so a zero value reaching "
+                        "this statement raises ZeroDivisionError."
+                    ),
+                    path=new.path,
+                    line=new.line,
+                    evidence=new.text.strip()[:240],
+                    fix="Preserve the zero check and its original fallback before dividing.",
+                    test=(
+                        f"Add or update a regression test for {divisor}=0 and assert the original "
+                        f"fallback. Also verify division with a nonzero {divisor}."
+                    ),
+                    confidence=0.90,
+                    evidence_refs=[{
+                        "evidence_id": f"local-rule:{evidence_id}",
+                        "tool": "local-rule-scanner",
+                        "rule_id": ZERO_DIVISOR_GUARD_RULE,
+                        "path": new.path,
+                        "line": new.line,
+                        "old_path": old.old_path,
+                        "old_line": old.line,
+                        "old_code": old.text.strip()[:240],
+                        "related_locations": [{"path": old.old_path, "line": old.line, "line_side": "old"}],
+                    }],
+                    source="local-rule-scanner",
+                ))
         return findings
 
-class SecurityRuleReviewer(DomainRuleReviewer):
-    name = "security-agent"
-    domains = ("security", "authorization")
-    rule_ids = frozenset({
-        "SEC-EVAL", "SEC-SUBPROCESS-SHELL", "SEC-HARDCODED-SECRET",
-        "SEC-SQL-CONCAT",
-    })
+
+def _return_value(source: str) -> Optional[ast.expr]:
+    try:
+        statements = ast.parse(source.strip()).body
+    except (SyntaxError, ValueError, RecursionError):
+        return None
+    if len(statements) == 1 and isinstance(statements[0], ast.Return):
+        return statements[0].value
+    return None
 
 
-class ReliabilityRuleReviewer(DomainRuleReviewer):
-    name = "reliability-agent"
-    domains = ("reliability", "correctness", "regression")
-    rule_ids = frozenset({"REL-EMPTY-EXCEPT", "REL-DEBUG-PRINT"})
+def _removed_divisor_guard(old: str, new: str) -> Optional[str]:
+    """Recognize a conditional return replaced by its unchanged division branch."""
+    before, after = _return_value(old), _return_value(new)
+    if not isinstance(before, ast.IfExp) or not isinstance(after, ast.BinOp):
+        return None
+    if not isinstance(after.op, (ast.Div, ast.FloorDiv)) or not isinstance(after.right, ast.Name):
+        return None
+    divisor = after.right.id
+    test = before.test
+    if isinstance(test, ast.Name) and test.id == divisor:
+        division, fallback = before.body, before.orelse
+    elif (
+        isinstance(test, ast.Compare) and len(test.ops) == 1
+        and isinstance(test.left, ast.Name) and test.left.id == divisor
+        and isinstance(test.comparators[0], ast.Constant)
+        and type(test.comparators[0].value) in (int, float) and test.comparators[0].value == 0
+    ):
+        if isinstance(test.ops[0], ast.NotEq):
+            division, fallback = before.body, before.orelse
+        elif isinstance(test.ops[0], ast.Eq):
+            division, fallback = before.orelse, before.body
+        else:
+            return None
+    else:
+        return None
+    if not isinstance(fallback, ast.Constant) or ast.dump(division) != ast.dump(after):
+        return None
+    return divisor
 
 
+# 通过兼容模型接口生成结构化审查问题。
 class OpenAICompatibleReviewer(Reviewer):
     name = "openai-compatible"
     domains = ("security", "reliability", "correctness", "regression")
 
+    # 保存模型接口与系统提示词，配置请求头和超时供审查调用使用。
     def __init__(
         self, base_url: str, api_key: str, model: str, timeout: int = 60,
         system_prompt: str = "", provider: str = "openai-compatible",
@@ -184,9 +253,11 @@ class OpenAICompatibleReviewer(Reviewer):
         self.name = "%s:%s" % (provider, model)
         self.extra_headers = extra_headers or {}
 
+    # 调用模型审查入口，保持与其他审查器一致的接口。
     def review(self, diff: str, parsed: ParsedDiff) -> List[Finding]:
         return self._review(diff, parsed)
 
+    # 构造 Diff 审查请求，记录模型响应并解析为问题对象。
     def _review(
         self, diff: str, parsed: ParsedDiff,
     ) -> List[Finding]:
@@ -215,6 +286,7 @@ class OpenAICompatibleReviewer(Reviewer):
         result = self._request_json(payload)
         return self._parse_findings(result, parsed)
 
+    # 调用兼容接口并解析 JSON 响应，处理模型返回格式。
     def _request_json(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         headers = {
             "Authorization": "Bearer " + self.api_key,
@@ -245,6 +317,7 @@ class OpenAICompatibleReviewer(Reviewer):
             raise RuntimeError("%s returned a non-object JSON response" % self.provider)
         return result
 
+    # 校验模型问题的新增行位置和字段，将合法结果转为 Finding。
     @staticmethod
     def _parse_findings(result: Dict[str, Any], parsed: ParsedDiff) -> List[Finding]:
         valid_locations = {(item.path, item.line) for item in parsed.added_lines}
@@ -275,13 +348,16 @@ class OpenAICompatibleReviewer(Reviewer):
         return findings
 
 
+# 组合多个审查器并对结果去重。
 class CompositeReviewer(Reviewer):
     name = "composite"
 
+    # 保存需要组合运行的审查器集合，并设置聚合审查器名称。
     def __init__(self, reviewers: List[Reviewer]):
         self.reviewers = reviewers
         self.name = "+".join(item.name for item in reviewers)
 
+    # 运行多个审查器并合并重复问题，保留各审查器贡献的结果。
     def review(self, diff: str, parsed: ParsedDiff) -> List[Finding]:
         merged: Dict[Any, Finding] = {}
         errors = []

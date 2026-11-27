@@ -1,3 +1,4 @@
+/* 登录遮罩覆盖业务界面；高于侧栏的层级确保未登录时表单可见。 */
 .login-overlay {
   position: fixed;
   inset: 0;
@@ -9,6 +10,7 @@
   backdrop-filter: blur(14px);
 }
 
+/* 登录卡片限制最大宽度，同时为手机两侧保留安全间距。 */
 .login-card {
   width: min(430px, calc(100vw - 32px));
   padding: 34px;
@@ -18,6 +20,7 @@
   box-shadow: 0 30px 100px rgba(0, 0, 0, .52);
 }
 
+/* 登录品牌区域复用主样式中的主题变量与标识。 */
 .login-brand {
   display: flex;
   align-items: center;
@@ -34,6 +37,7 @@
   flex-basis: 38px;
 }
 
+/* 登录标题与引导文字的层级。 */
 .login-card h2 {
   margin: 0 0 7px;
   font-size: 28px;
@@ -46,11 +50,13 @@
   font-size: 12px;
 }
 
+/* 提交按钮占满可用宽度，便于触屏点击。 */
 .login-card .button {
   width: 100%;
   margin-top: 5px;
 }
 
+/* 错误提示预留高度，显示认证失败时避免表单跳动。 */
 .login-error {
   min-height: 18px;
   margin: 13px 0 0;
@@ -58,6 +64,7 @@
   font-size: 11px;
 }
 
+/* 小屏幕缩减卡片内边距，为表单保留输入空间。 */
 @media (max-width: 480px) {
   .login-card { padding: 27px 23px; }
 }

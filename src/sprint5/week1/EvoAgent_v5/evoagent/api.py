@@ -1,3 +1,6 @@
+# HTTP 接口与静态页面入口：解析请求、校验身份和权限，再调用 ReviewService。
+# 用户请求按租户访问数据；GitHub Webhook 使用独立的签名校验流程。
+
 import hashlib
 import json
 import mimetypes
@@ -10,7 +13,9 @@ from typing import Any, Dict
 
 from .config import Settings
 from .auth import Principal
+from .batch_review import ReviewConflict
 from .github import verify_signature
+from .github_review import REPOSITORY
 from .metrics import metrics
 from .modes import public_taxonomy, resolve_mode
 from .report import to_markdown
@@ -23,6 +28,12 @@ FIX = re.compile(r"^/v1/tasks/([0-9a-f-]+)/fix$")
 FEEDBACK = re.compile(r"^/v1/tasks/([0-9a-f-]+)/feedback$")
 CANCEL = re.compile(r"^/v1/tasks/([0-9a-f-]+)/cancel$")
 RESUME = re.compile(r"^/v1/tasks/([0-9a-f-]+)/resume$")
+ACCEPT = re.compile(r"^/v1/tasks/([0-9a-f-]+)/accept$")
+TASK_WORKBENCH = re.compile(r"^/v1/tasks/([0-9a-f-]+)/(progress|workbench|diff)$")
+FINDING = re.compile(r"^/v1/tasks/([0-9a-f-]+)/findings/([0-9a-f]{32})$")
+EVOLUTION_JOB = re.compile(r"^/v1/evolution/jobs/([0-9a-f-]+)$")
+VERSION_CATALOG = re.compile(r"^/v1/versions/(prompt|skill)/([a-z0-9_-]+)(?:/(\d+))?$")
+VERSION_PUBLISH = re.compile(r"^/v1/versions/(prompt|skill)/([a-z0-9_-]+)/(\d+)/publish$")
 ROLLBACK = re.compile(r"^/v1/skills/([A-Za-z0-9_-]+)/versions/(\d+)/activate$")
 SKILL_ARTIFACT_VERSIONS = re.compile(r"^/v1/skill-evolution/([a-z0-9_-]+)/versions$")
 SKILL_ARTIFACT_ACTIVATE = re.compile(
@@ -31,14 +42,17 @@ SKILL_ARTIFACT_ACTIVATE = re.compile(
 WEB_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "web"))
 
 
+# 基于标准库的 HTTP 请求处理器，负责路由和接口边界校验。
 class ApiHandler(BaseHTTPRequestHandler):
     service: ReviewService
     settings: Settings
     server_version = "EvoAgent/0.3"
 
+    # 将客户端地址与格式化后的请求日志输出到标准输出，便于容器收集。
     def log_message(self, fmt: str, *args: Any) -> None:
         print("%s - %s" % (self.address_string(), fmt % args))
 
+    # 写入状态码、内容类型及通用响应头。
     def _headers(self, status: int, content_type: str, length: int) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
@@ -48,6 +62,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "same-origin")
         self.end_headers()
 
+    # 按配置解析身份并要求所需权限，返回当前请求的租户与角色。
     def _principal(self, permission: str = "read") -> Principal:
         if not self.settings.auth_required:
             return Principal(
@@ -57,6 +72,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.service.auth.require(principal, (permission,))
         return principal
 
+    # 捕获认证错误并发送对应响应，避免各路由重复处理未登录情况。
     def _authenticate_or_send(self, permission: str = "read"):
         try:
             return self._principal(permission)
@@ -64,16 +80,19 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(401, {"error": str(exc)})
             return None
 
+    # 以 UTF-8 输出 JSON 响应，并设置正确的内容长度。
     def _send_json(self, status: int, value: Dict[str, Any]) -> None:
         body = json.dumps(value, ensure_ascii=False, default=str).encode("utf-8")
         self._headers(status, "application/json; charset=utf-8", len(body))
         self.wfile.write(body)
 
+    # 输出指定内容类型的文本，供报告和指标端点使用。
     def _send_text(self, status: int, text: str, content_type: str = "text/plain; charset=utf-8") -> None:
         body = text.encode("utf-8")
         self._headers(status, content_type, len(body))
         self.wfile.write(body)
 
+    # 读取 Web 静态文件并根据扩展名设置响应类型，缺失时返回错误。
     def _serve_file(self, filename: str) -> None:
         path = os.path.abspath(os.path.join(WEB_ROOT, filename))
         if not path.startswith(WEB_ROOT + os.sep) and path != WEB_ROOT:
@@ -91,6 +110,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._headers(200, content_type, len(body))
         self.wfile.write(body)
 
+    # 按 Content-Length 读取请求体，并检查配置的大小限制。
     def _read_body(self) -> bytes:
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -101,6 +121,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             raise ValueError("request body is empty or too large")
         return self.rfile.read(length)
 
+    # 把请求体解析成 JSON 对象，拒绝格式或顶层类型不符的输入。
     @staticmethod
     def _read_json(body: bytes) -> Dict[str, Any]:
         try:
@@ -111,6 +132,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             raise ValueError("JSON root must be an object")
         return value
 
+    # 分发查询和静态页面请求；业务查询按身份限定租户，管理接口另查权限。
     def do_GET(self) -> None:
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
@@ -162,8 +184,28 @@ class ApiHandler(BaseHTTPRequestHandler):
                                   "taxonomy": public_taxonomy()})
             return
         if path == "/api/tasks":
-            self._send_json(200, {"tasks": self.service.store.list_tasks(
-                int(query.get("limit", [50])[0]), principal.tenant_id)})
+            try:
+                if {"repository", "pull_request", "state", "page"} & query.keys():
+                    pr = query.get("pull_request", [""])[0]
+                    result = self.service.workbench.tasks(
+                        principal.tenant_id, query.get("repository", [""])[0], int(pr) if pr else None,
+                        query.get("state", [""])[0], int(query.get("page", [1])[0]),
+                    )
+                else:
+                    result = {"tasks": self.service.store.list_tasks(int(query.get("limit", [50])[0]), principal.tenant_id)}
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            self._send_json(200, result)
+            return
+        if path == "/v1/review-settings":
+            repository = query.get("repository", [""])[0].lower()
+            if not REPOSITORY.fullmatch(repository):
+                self._send_json(400, {"error": "Invalid repository name"})
+            elif not principal.can("manage") or not self.service.store.repository_allowed(principal.tenant_id, repository):
+                self._send_json(403, {"error": "permission denied"})
+            else:
+                self._send_json(200, {"publication": self.service.github_review.publication_policy(principal.tenant_id, repository)})
             return
         if path == "/api/skills":
             self._send_json(200, {
@@ -217,6 +259,9 @@ class ApiHandler(BaseHTTPRequestHandler):
             })
             return
         if path == "/v1/evolution/runs":
+            if not principal.can("manage") or principal.tenant_id != self.settings.default_tenant_id:
+                self._send_json(403, {"error": "permission denied"})
+                return
             self._send_json(200, {
                 "runs": self.service.store.list_evolution_runs(int(query.get("limit", [50])[0]))
             })
@@ -226,6 +271,50 @@ class ApiHandler(BaseHTTPRequestHandler):
             status["provider"] = self.service.llm_config.get("provider", "local")
             status["model"] = self.service.llm_config.get("model", "")
             self._send_json(200, status)
+            return
+        match = VERSION_CATALOG.match(path)
+        if match:
+            if not principal.can("manage"):
+                self._send_json(403, {"error": "permission denied"})
+                return
+            try:
+                if match[3]:
+                    result = self.service.version_detail(match[1], match[2], int(match[3]), principal.tenant_id)
+                else:
+                    result = self.service.version_catalog(match[1], match[2], principal.tenant_id)
+                    if query.get("summary", [""])[0] == "1":
+                        result["versions"] = [{key: version.get(key) for key in ("version", "active", "created_at", "release_state")}
+                                              for version in result["versions"]]
+            except PermissionError as exc:
+                self._send_json(403, {"error": str(exc)})
+                return
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            except LookupError as exc:
+                self._send_json(404, {"error": str(exc)})
+                return
+            self._send_json(200, result)
+            return
+        if path == "/v1/evolution/jobs":
+            if not principal.can("manage"):
+                self._send_json(403, {"error": "permission denied"})
+                return
+            kind, name = query.get("kind", ["prompt"])[0], query.get("name", ["llm-review"])[0]
+            try:
+                self.service._version_scope(kind, name, principal.tenant_id)
+            except (PermissionError, ValueError) as exc:
+                self._send_json(403 if isinstance(exc, PermissionError) else 400, {"error": str(exc)})
+                return
+            self._send_json(200, {"jobs": self.service.store.evolution_jobs(principal.tenant_id, kind, name)})
+            return
+        match = EVOLUTION_JOB.match(path)
+        if match:
+            if not principal.can("manage"):
+                self._send_json(403, {"error": "permission denied"})
+                return
+            job = self.service.evolution_job(match[1], principal.tenant_id)
+            self._send_json(200 if job else 404, job or {"error": "job not found"})
             return
         if path == "/v1/skill-evolution/status":
             if not principal.can("manage"):
@@ -273,6 +362,27 @@ class ApiHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         report_match = REPORT.match(path)
+        workbench_match = TASK_WORKBENCH.match(path)
+        if workbench_match:
+            workbench = self.service.workbench
+            try:
+                task = workbench.header(workbench_match[1], principal.tenant_id)
+                section = workbench_match[2]
+                if section == "progress":
+                    result = workbench.progress(task, principal.can("review"), principal.can("fix"))
+                elif section == "workbench":
+                    result = workbench.content(task, principal.can("review"))
+                else:
+                    result = workbench.diff(task, query.get("file", [""])[0], int(query.get("offset", [0])[0]),
+                                            query.get("side", ["new"])[0], int(query.get("line", [0])[0]))
+            except LookupError as exc:
+                self._send_json(404, {"error": str(exc)})
+                return
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            self._send_json(200, result)
+            return
         task_match = TASK.match(path)
         feedback_match = FEEDBACK.match(path)
         if feedback_match:
@@ -289,20 +399,28 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
         if report_match:
             task = self.service.store.get(report_match.group(1), principal.tenant_id)
-            if not task or not task.get("report"):
+            if not task or not self.service.store.repository_allowed(principal.tenant_id, task["repository"]):
                 self._send_json(404, {"error": "task or report not found"})
                 return
-            self._send_text(200, to_markdown(task["report"]), "text/markdown; charset=utf-8")
+            task = self.service.batch_review.details(task, False)
+            report = task.get("report") or task.get("partial_report")
+            if not report:
+                self._send_json(404, {"error": "task or report not found"})
+                return
+            self._send_text(200, to_markdown(report), "text/markdown; charset=utf-8")
             return
         if task_match:
             task = self.service.store.get(task_match.group(1), principal.tenant_id)
-            if not task:
+            if not task or task["input"].get("job_type") or not self.service.store.repository_allowed(
+                principal.tenant_id, task["repository"]
+            ):
                 self._send_json(404, {"error": "task not found"})
                 return
-            self._send_json(200, task)
+            self._send_json(200, self.service.batch_review.details(task, principal.can("review")))
             return
         self._send_json(404, {"error": "not found"})
 
+    # 分发登录、审查、反馈、修复和管理请求，将校验异常转换为 HTTP 响应。
     def do_POST(self) -> None:
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
@@ -365,6 +483,37 @@ class ApiHandler(BaseHTTPRequestHandler):
                     },
                 )
                 return
+            if path == "/v1/reviews/github":
+                principal = self._principal("review")
+                payload = self._read_json(body)
+                result = self.service.github_review.enqueue_url(payload.get("pr_url"), principal.tenant_id)
+                self.service.store.audit(principal.tenant_id, principal.username, "review.github.create",
+                                         result["task_id"], {"duplicate": result["duplicate"]})
+                self._send_json(202, result)
+                return
+            if path == "/v1/review-settings":
+                principal = self._principal("manage")
+                payload = self._read_json(body)
+                repository = str(payload.get("repository", "")).lower()
+                publication = payload.get("publication")
+                if (not REPOSITORY.fullmatch(repository) or not isinstance(publication, str)
+                        or publication not in {"off", "summary", "inline"}):
+                    raise ValueError("Invalid repository or publication mode")
+                self.service._authorize_repository(principal.tenant_id, repository)
+                self.service.store.save_repository_publication(principal.tenant_id, repository, publication)
+                self.service.store.audit(principal.tenant_id, principal.username, "review.publication", repository,
+                                         {"publication": publication})
+                self._send_json(200, {"publication": publication})
+                return
+            match = FINDING.match(path)
+            if match:
+                principal = self._principal("review")
+                payload = self._read_json(body)
+                workbench = self.service.workbench
+                task = workbench.header(match[1], principal.tenant_id)
+                self._send_json(200, workbench.set_finding(task, match[2], payload.get("state"),
+                                                          payload.get("note", ""), principal.username))
+                return
             if path == "/webhooks/github":
                 if self.headers.get("X-GitHub-Event", "") != "pull_request":
                     self._send_json(202, {"ignored": True, "reason": "unsupported GitHub event"})
@@ -416,10 +565,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                 result = self.service.record_feedback(
                     match.group(1), str(payload.get("category", "")), payload.get("finding"),
                     str(payload.get("note", "")), principal.tenant_id,
+                    str(payload.get("skill_name") or "llm-review"),
                 )
                 self.service.store.audit(
                     principal.tenant_id, principal.username, "feedback.record", match.group(1),
-                    {"category": result["category"]},
+                    {"category": result["category"], "skill_name": result["skill_name"]},
                 )
                 self._send_json(201, result)
                 return
@@ -435,11 +585,28 @@ class ApiHandler(BaseHTTPRequestHandler):
             match = RESUME.match(path)
             if match:
                 principal = self._principal("review")
-                result = self.service.resume_task(match.group(1), principal.tenant_id)
+                payload = self._read_json(body) if body else {}
+                result = self.service.resume_task(match.group(1), principal.tenant_id, payload.get("additional_tokens", 0))
                 self.service.store.audit(
                     principal.tenant_id, principal.username, "task.resume", match.group(1)
                 )
                 self._send_json(202, result)
+                return
+            match = ACCEPT.match(path)
+            if match:
+                principal = self._principal("review")
+                payload = self._read_json(body)
+                result = self.service.accept_review(match[1], principal.tenant_id, principal.username,
+                                                    payload.get("report_revision"))
+                self._send_json(200, {"confirmation": result})
+                return
+            match = VERSION_PUBLISH.match(path)
+            if match:
+                principal = self._principal("manage")
+                payload = self._read_json(body) if body else {}
+                result = self.service.publish_version(match[1], match[2], int(match[3]), principal.tenant_id,
+                                                      principal.username, payload.get("canary_percent", 0))
+                self._send_json(200, result)
                 return
             if path == "/v1/skills/reload":
                 principal = self._principal("manage")
@@ -449,14 +616,15 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path == "/v1/deployments/llm-review":
                 principal = self._principal("manage")
                 payload = self._read_json(body)
-                result = self.service.releases.configure(
-                    principal.tenant_id, "llm-review", payload
-                )
+                if type(payload.get("canary_percent")) is not int or not 1 <= payload["canary_percent"] <= 100:
+                    raise ValueError("Use a canary_percent between 1 and 100 for deployment. Activate stable from the version workbench.")
+                result = self.service.publish_version("prompt", "llm-review", payload.get("candidate_version"),
+                                                      principal.tenant_id, principal.username, payload.get("canary_percent", 0))
                 self.service.store.audit(
                     principal.tenant_id, principal.username, "deployment.configure",
                     "llm-review", payload,
                 )
-                self._send_json(201, result)
+                self._send_json(201, result["deployment"])
                 return
             if path == "/v1/queue/dead-letters/replay":
                 principal = self._principal("manage")
@@ -481,38 +649,20 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path == "/v1/evolution/auto":
                 principal = self._principal("manage")
                 payload = self._read_json(body)
-                result = self.service.evolution.auto_propose(
-                    str(payload.get("skill_name", "llm-review")), principal.tenant_id
-                )
-                if result["decision"] == "activated":
-                    self.service.reload_skills()
-                self._send_json(201, result)
+                self._evaluate_response("prompt", str(payload.get("skill_name", "llm-review")),
+                                        principal, {"automatic": True}, query)
                 return
             if path == "/v1/evolution/propose":
-                self._principal("manage")
+                principal = self._principal("manage")
                 payload = self._read_json(body)
-                result = self.service.evolution.propose(
-                    str(payload.get("skill_name", "")), str(payload.get("prompt", "")),
-                    float(payload["regression_score"]) if "regression_score" in payload else None,
-                )
-                if result["decision"] == "activated":
-                    self.service.reload_skills()
-                self._send_json(201, result)
+                self._evaluate_response("prompt", str(payload.get("skill_name", "llm-review")),
+                                        principal, {"prompt": str(payload.get("prompt", ""))}, query)
                 return
             if path == "/v1/skill-evolution/auto":
                 principal = self._principal("manage")
                 payload = self._read_json(body)
-                result = self.service.skill_evolution.auto_propose(
-                    str(payload.get("skill_name", "evolved-review")), principal.tenant_id
-                )
-                if result["decision"] == "activated":
-                    self.service.reload_skills()
-                self.service.store.audit(
-                    principal.tenant_id, principal.username, "skill.evolution.auto",
-                    str(payload.get("skill_name", "evolved-review")),
-                    {"decision": result["decision"], "run_id": result.get("run_id")},
-                )
-                self._send_json(201, result)
+                self._evaluate_response("skill", str(payload.get("skill_name", "evolved-review")),
+                                        principal, {"automatic": True}, query)
                 return
             if path == "/v1/skill-evolution/propose":
                 principal = self._principal("manage")
@@ -524,42 +674,26 @@ class ApiHandler(BaseHTTPRequestHandler):
                         "skill_md": payload.get("skill_md"),
                         "supporting_files": payload.get("supporting_files") or {},
                     }
-                result = self.service.skill_evolution.propose(
-                    str(payload.get("skill_name", "")), artifact,
-                    principal.tenant_id,
-                )
-                if result["decision"] == "activated":
-                    self.service.reload_skills()
-                self.service.store.audit(
-                    principal.tenant_id, principal.username, "skill.evolution.propose",
-                    str(payload.get("skill_name", "")),
-                    {"decision": result["decision"], "run_id": result.get("run_id")},
-                )
-                self._send_json(201, result)
+                self._evaluate_response("skill", str(payload.get("skill_name", "")),
+                                        principal, {"artifact": artifact}, query)
                 return
             match = SKILL_ARTIFACT_ACTIVATE.match(path)
             if match:
                 principal = self._principal("manage")
-                ok = self.service.skill_evolution.rollback(
-                    match.group(1), int(match.group(2)), principal.tenant_id
-                )
-                if ok:
-                    self.service.reload_skills()
-                self.service.store.audit(
-                    principal.tenant_id, principal.username, "skill.evolution.activate",
-                    match.group(1), {"version": int(match.group(2)), "activated": ok},
-                )
-                self._send_json(200 if ok else 404, {"activated": ok})
+                self.service.publish_version("skill", match[1], int(match[2]), principal.tenant_id, principal.username)
+                self._send_json(200, {"activated": True})
                 return
             match = ROLLBACK.match(path)
             if match:
-                self._principal("manage")
-                ok = self.service.evolution.rollback(match.group(1), int(match.group(2)))
-                if ok:
-                    self.service.reload_skills()
-                self._send_json(200 if ok else 404, {"activated": ok})
+                principal = self._principal("manage")
+                self.service.publish_version("prompt", match[1], int(match[2]), principal.tenant_id, principal.username)
+                self._send_json(200, {"activated": True})
                 return
             self._send_json(404, {"error": "not found"})
+        except ReviewConflict as exc:
+            self._send_json(409, {"error": str(exc)})
+        except LookupError as exc:
+            self._send_json(404, {"error": str(exc)})
         except ValueError as exc:
             self._send_json(400, {"error": str(exc)})
         except PermissionError as exc:
@@ -568,7 +702,18 @@ class ApiHandler(BaseHTTPRequestHandler):
             metrics.inc("http_errors_total")
             self._send_json(500, {"error": "operation failed", "detail": str(exc)})
 
+    def _evaluate_response(self, kind, name, principal, options, query):
+        if query.get("async", ["false"])[0].lower() == "true":
+            result = self.service.queue_evolution(kind, name, principal.tenant_id, principal.username, options)
+            self._send_json(202, result)
+        else:
+            result = self.service.evaluate_version(kind, name, principal.tenant_id, options)
+            self.service.store.audit(principal.tenant_id, principal.username, f"{kind}.evaluate", name,
+                                     {"decision": result["decision"], "run_id": result.get("run_id")})
+            self._send_json(201, result)
 
+
+# 从环境构建服务并绑定请求处理器，启动线程化 HTTP 服务器。
 def run() -> None:
     settings = Settings.from_env()
     service = ReviewService(settings)
@@ -583,5 +728,5 @@ def run() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        service.queue.close()
+        service.queue.close(wait=False)
         server.server_close()

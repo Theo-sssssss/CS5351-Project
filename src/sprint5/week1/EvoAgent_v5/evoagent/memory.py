@@ -1,3 +1,5 @@
+# 审查记忆管理：按租户、仓库、任务和角色区分长期经验与短期观察，支持检索、过期和任务归档。
+
 """Tenant-aware working, episodic and semantic memory for review agents."""
 from datetime import datetime, timedelta, timezone
 import hashlib
@@ -12,13 +14,16 @@ TOKEN = re.compile(r"[A-Za-z0-9_./:-]{2,}")
 VALID_SCOPES = {"working", "episodic", "semantic", "procedural"}
 
 
+# 提取用于记忆匹配的词项，统一小写并去重。
 def _tokens(value: str) -> set:
     return {item.lower() for item in TOKEN.findall(value)}
 
 
+# 持久化和检索不同作用域的记忆，统一处理隔离与生命周期。
 class MemoryManager:
     """Persist and retrieve bounded memories without hiding store side effects."""
 
+    # 保存存储与记忆开关，为召回数量和短期有效期设置下限。
     def __init__(
         self, store, enabled: bool = True, recall_limit: int = 6,
         working_ttl_seconds: int = 86400,
@@ -28,6 +33,7 @@ class MemoryManager:
         self.recall_limit = max(1, recall_limit)
         self.working_ttl_seconds = max(60, working_ttl_seconds)
 
+    # 规范化记忆内容并计算稳定标识，按作用域设置有效期后交给存储层。
     def remember(
         self, tenant_id: str, repository: str, scope: str, kind: str,
         content: str, metadata: Optional[Dict[str, Any]] = None,
@@ -41,6 +47,7 @@ class MemoryManager:
         importance = max(0.0, min(1.0, float(importance)))
         metadata = dict(metadata or {})
         normalized = content.strip()[:8000]
+        # 记忆指纹包含租户和仓库，同样的代码线索不会因此被合并到其他租户。
         fingerprint = json.dumps({
             "tenant": tenant_id, "repository": repository, "scope": scope,
             "kind": kind, "content": normalized, "metadata": metadata,
@@ -62,6 +69,7 @@ class MemoryManager:
         }
         return self.store.save_agent_memory(record)
 
+    # 清理过期记录，在租户与仓库范围内按词项重合度、重要性和新近性排序。
     def recall(
         self, tenant_id: str, repository: str, query: str,
         scopes: Sequence[str] = ("semantic", "episodic"),
@@ -105,6 +113,7 @@ class MemoryManager:
             key=lambda item: (-item["recall_score"], item.get("created_at", "")),
         )[:size]
 
+    # 只读取当前任务的短期观察，指定角色时再按角色过滤并截取数量。
     def recall_working(
         self, tenant_id: str, repository: str, task_id: str, query: str = "",
         limit: Optional[int] = None, agent: str = "",
@@ -117,6 +126,7 @@ class MemoryManager:
             # Filter by agent after the store query; request the bounded
             # candidate set first so another role's higher-importance entries
             # cannot hide this role's own observations.
+            # 先取候选再按角色筛选，避免其他角色的重要记忆挤掉当前角色的记录。
             limit=200 if agent else limit,
             task_id=task_id,
         )
@@ -126,6 +136,7 @@ class MemoryManager:
         ]
         return selected[:max(1, limit or self.recall_limit)]
 
+    # 将工具状态、证据标识和受限输出写入当前任务的短期记忆。
     def remember_observation(
         self, tenant_id: str, repository: str, task_id: str, agent: str,
         observation: Dict[str, Any],
@@ -153,6 +164,7 @@ class MemoryManager:
             importance=0.5 if observation.get("ok") else 0.3,
         )
 
+    # 把问题及门禁接受或拒绝原因保存为事件记忆，便于追溯决策。
     def remember_finding(
         self, tenant_id: str, repository: str, task_id: str,
         finding: Dict[str, Any], approved: bool, reasons: Iterable[str] = (),
@@ -173,6 +185,7 @@ class MemoryManager:
             importance=0.8 if approved else 0.45,
         )
 
+    # 将人工反馈保存为仓库范围的语义记忆，供后续审查检索。
     def remember_feedback(
         self, tenant_id: str, repository: str, task_id: str, category: str,
         finding: Optional[Dict[str, Any]], note: str,
@@ -188,11 +201,13 @@ class MemoryManager:
             importance=0.95 if category in {"false_positive", "missed_issue", "bad_fix"} else 0.7,
         )
 
+    # 删除指定任务的短期观察，释放已完成任务的工作记忆。
     def forget_working(self, task_id: str) -> int:
         if not self.enabled:
             return 0
         return self.store.delete_agent_memories(task_id=task_id, scope="working")
 
+    # 先归档任务摘要，再释放短期观察，保留可供后续检索的任务经历。
     def consolidate_task(
         self, tenant_id: str, repository: str, task_id: str,
         summary: Dict[str, Any],
@@ -209,5 +224,6 @@ class MemoryManager:
             metadata={"summary": dict(summary)}, task_id=task_id,
             agent="agent-runtime", importance=0.65,
         )
+        # 归档成功后才删除工作记忆，避免在摘要写入失败时丢失本次观察。
         self.forget_working(task_id)
         return archived

@@ -1,3 +1,5 @@
+# 提示词演进：从反馈提出候选，在验证集和保留集上与当前版本回放比较，通过门禁后才可激活。
+
 import hashlib
 import json
 import re
@@ -59,13 +61,16 @@ DEFAULT_EVALUATION_CASES = [
 SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
 
+# 用候选审查器回放带标签案例并计算回归指标。
 class RegressionEvaluator:
     """Replay a fixed dataset against one prompt and compute objective review metrics."""
 
+    # 保存候选审查器工厂及问题匹配参数，供基线和候选使用相同评测规则。
     def __init__(self, reviewer_factory: Callable[[str], object], line_tolerance: int = 2):
         self.reviewer_factory = reviewer_factory
         self.line_tolerance = max(0, int(line_tolerance))
 
+    # 用同一提示词回放全部案例，以一对一问题匹配汇总指标，执行错误计入漏报。
     def run(self, prompt: str, cases: List[dict]) -> Dict[str, Any]:
         reviewer = self.reviewer_factory(prompt)
         reviewer_name = str(getattr(reviewer, "name", reviewer.__class__.__name__))
@@ -210,12 +215,14 @@ class RegressionEvaluator:
         }
 
 
+# 提示词版本管理与回放门禁，防止未验证候选直接成为活动版本。
 class EvolutionEngine:
     """Prompt evolution backed by replay evaluation, audit records and activation gates."""
 
     FORBIDDEN = ("ignore previous", "disable safety", "bypass", "直接执行生产")
     FEEDBACK_RULE_ID = re.compile(r"^[A-Z][A-Z0-9_-]{1,79}$")
 
+    # 保存存储、回放工厂和激活门槛，初始化演进锁并准备内置案例。
     def __init__(
         self, store, reviewer_factory: Optional[Callable[[str], object]] = None,
         min_cases: int = 3, max_cases: int = 5, min_improvement: float = 0.01,
@@ -234,6 +241,7 @@ class EvolutionEngine:
         if seed_defaults:
             self._seed_default_cases()
 
+    # 为缺少初始数据的评测存储补充内置样本。
     def _seed_default_cases(self) -> None:
         for case in DEFAULT_EVALUATION_CASES:
             self.store.save_evaluation_case(
@@ -241,6 +249,7 @@ class EvolutionEngine:
                 case["expected"], "builtin", True
             )
 
+    # 检查样本名称、划分、Diff 与期望标签的结构，拒绝无法有效回放的案例。
     @staticmethod
     def validate_case(name: str, diff: str, expected: list, split: str = "validation") -> None:
         if not name or len(name) > 120:
@@ -287,6 +296,7 @@ class EvolutionEngine:
                 raise ValueError("duplicate expected finding: %s:%s:%s" % identity)
             seen.add(identity)
 
+    # 校验样本名称、划分、Diff 和标签，再保存不可变评测案例。
     def add_evaluation_case(
         self, name: str, diff: str, expected: list, split: str = "validation",
         source: str = "manual",
@@ -296,6 +306,7 @@ class EvolutionEngine:
         self.validate_case(name, diff, expected, split)
         return self.store.save_evaluation_case(name, split, diff, expected, source[:120], True)
 
+    # 用确定性规则检查提示词长度、禁用内容及输出契约所需关键词。
     def safety_evaluate(self, prompt: str) -> Dict[str, Any]:
         normalized = prompt.strip()
         lowered = normalized.lower()
@@ -310,6 +321,7 @@ class EvolutionEngine:
             "missing_terms": [token for token in required if token not in lowered],
         }
 
+    # 报告模型、验证集与保留集是否就绪，并返回激活门槛和数据指纹。
     def status(self) -> Dict[str, Any]:
         cases = self.store.list_evaluation_cases("validation", True, self.max_cases)
         holdout = self.store.list_evaluation_cases("holdout", True, self.max_cases)
@@ -331,18 +343,22 @@ class EvolutionEngine:
             ),
         }
 
+    # 校验 Skill 名称并加锁，串行执行候选评测与版本写入。
     def propose(
         self, skill_name: str, prompt: str, regression_score: Optional[float] = None,
+        *, activation_policy: str = "auto", feedback_ids=(),
     ) -> Dict[str, Any]:
         skill_name = skill_name.strip()
         if not skill_name or len(skill_name) > 120:
             raise ValueError("skill_name is required and must be at most 120 characters")
         with self._lock:
-            return self._propose(skill_name, prompt, regression_score)
+            return self._propose(skill_name, prompt, regression_score, activation_policy, feedback_ids)
 
+    # 回放基线和候选，检查安全性、改进幅度与非退步门禁，再保存版本和决策记录。
     def _propose(
         self, skill_name: str, prompt: str, regression_score: Optional[float],
         activation_policy: str = "auto",
+        feedback_ids=(),
     ) -> Dict[str, Any]:
         safety = self.safety_evaluate(prompt)
         active = self.store.get_active_skill_version(skill_name)
@@ -398,6 +414,7 @@ class EvolutionEngine:
             if holdout_cases:
                 baseline_holdout = evaluator.run(baseline_prompt, holdout_cases)
                 candidate_holdout = evaluator.run(prompt, holdout_cases)
+            # 基线和候选必须在两个集合都成功回放，错误结果不能参与自动激活。
             no_errors = not (
                 baseline_metrics["errors"] or candidate_metrics["errors"]
                 or baseline_holdout["errors"] or candidate_holdout["errors"]
@@ -412,11 +429,12 @@ class EvolutionEngine:
                 "holdout_non_regression": holdout_safe,
             })
             if no_errors and improved and validation_safe and holdout_safe:
-                decision = "activated" if activation_policy == "auto" else "shadow_ready"
+                # 自动策略可激活；模型生成的结构化候选走 shadow 策略，先留待影子或灰度评估。
+                decision = {"auto": "activated", "manual": "ready"}.get(activation_policy, "shadow_ready")
                 reason = (
                     "candidate improved on validation and passed the non-regression holdout gate"
                     if decision == "activated" else
-                    "candidate passed replay gates and is awaiting shadow/canary approval"
+                    "candidate passed replay gates and is awaiting administrator approval"
                 )
             else:
                 decision = "rejected"
@@ -449,6 +467,7 @@ class EvolutionEngine:
                 "baseline_holdout": self._redact_holdout_metrics(baseline_holdout),
                 "safety": safety,
                 "gates": gates,
+                "feedback_ids": list(feedback_ids),
                 "reason": reason,
                 "reproducibility": {
                     "evaluation_schema_version": 2,
@@ -459,6 +478,7 @@ class EvolutionEngine:
                     "validation_case_ids": [case.get("id") for case in cases],
                     "holdout_case_count": len(holdout_cases),
                 },
+                # 外部传入的分数不作为放行依据，决策只使用本次实际回放指标。
                 "external_regression_score_ignored": regression_score is not None,
             },
             "created_at": utc_now(),
@@ -477,14 +497,21 @@ class EvolutionEngine:
             "run_id": run["id"],
         }
 
+    # 在锁内将指定历史提示词版本重新设为活动版本。
     def rollback(self, skill_name: str, version: int) -> bool:
         with self._lock:
             return self.store.activate_skill_version(skill_name, version)
 
+    # 从未解决反馈生成候选；模型生成的候选通过门禁后进入影子待审阶段。
     def auto_propose(
         self, skill_name: str = "llm-review", tenant_id: Optional[str] = None,
+        *, activation_policy: str = "auto",
     ) -> Dict[str, Any]:
-        cases = self.store.list_failure_cases(True, 100, tenant_id)
+        cases = self.store.list_failure_cases(
+            True, 100, tenant_id, skill_name=skill_name,
+        )
+        if activation_policy == "manual":
+            cases = [case for case in cases if case["category"] in {"false_positive", "missed_issue", "bad_fix"}]
         active = self.store.get_active_skill_version(skill_name)
         base = active["prompt"] if active else DEFAULT_PROMPT
         if self.candidate_generator is not None and cases:
@@ -497,7 +524,9 @@ class EvolutionEngine:
                     "candidate_change": generated,
                     "failure_cases_used": len(cases), "run_id": None,
                 }
-            result = self._propose(skill_name, candidate, None, activation_policy="shadow")
+            result = self.propose(skill_name, candidate, activation_policy=(
+                "manual" if activation_policy == "manual" else "shadow"
+            ), feedback_ids=[case["id"] for case in cases])
             result["candidate_change"] = generated
             result["failure_cases_used"] = len(cases)
             result["rollback_point"] = (
@@ -576,7 +605,8 @@ class EvolutionEngine:
         candidate = base.rstrip() + (
             "\n\nLearned constraints:\n- " + "\n- ".join(additions)
         )
-        result = self.propose(skill_name, candidate)
+        result = self.propose(skill_name, candidate, activation_policy=activation_policy,
+                              feedback_ids=[case["id"] for case in cases])
         result["failure_cases_used"] = len(cases)
         result["learned_categories"] = counts
         result["learned_rule_ids"] = learned_rule_ids
@@ -584,6 +614,7 @@ class EvolutionEngine:
             self.store.resolve_failure_cases([case["id"] for case in cases])
         return result
 
+    # 在尚未回放或回放不可用时返回统一的空指标结构。
     @staticmethod
     def _empty_metrics(case_count: int) -> Dict[str, Any]:
         return {
@@ -596,6 +627,7 @@ class EvolutionEngine:
             "successful_cases": 0, "success_rate": 0.0, "errors": [], "case_results": [],
         }
 
+    # 逐项检查受保护指标，判断候选的退步是否超过允许范围。
     def _non_regressing(self, candidate: Dict[str, Any], baseline: Dict[str, Any]) -> bool:
         protected = ["score", "precision", "recall", "high_severity_recall"]
         if baseline.get("positive_cases", 0):
@@ -608,6 +640,7 @@ class EvolutionEngine:
             for metric in protected
         )
 
+    # 裁剪保留集的公开结果，避免暴露逐案例明细。
     @staticmethod
     def _redact_holdout_metrics(metrics: Dict[str, Any]) -> Dict[str, Any]:
         redacted = {
@@ -617,10 +650,12 @@ class EvolutionEngine:
         redacted["error_count"] = len(metrics.get("errors", []))
         return redacted
 
+    # 计算内容的 SHA-256 指纹，用于识别相同输入和追踪版本。
     @staticmethod
     def _sha256(value: str) -> str:
         return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
+    # 计算评测数据集的内容指纹，写入演进记录以便复现。
     @classmethod
     def _dataset_fingerprint(cls, cases: List[dict]) -> str:
         canonical = [

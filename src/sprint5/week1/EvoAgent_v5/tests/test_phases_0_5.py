@@ -1,3 +1,5 @@
+# 核心能力集成测试：覆盖真实角色调用、结构化演进、补丁验证和数据集门禁。
+
 import json
 import os
 import tempfile
@@ -17,10 +19,12 @@ from evoagent.verifier import RepairVerifier
 DIFF = "--- a/app.py\n+++ b/app.py\n@@ -1 +1 @@\n-old\n+eval(user_input)\n"
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class FakeChatClient:
     provider = "fake"
     model = "fake-model"
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, system, user, ledger=None, max_tokens=None):
         if ledger:
             ledger.record_model(
@@ -89,17 +93,21 @@ class FakeChatClient:
         raise AssertionError(role)
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class PhaseImplementationTests(unittest.TestCase):
+    # 为每个测试创建独立夹具和临时资源，避免前一个用例的状态影响当前断言。
     def setUp(self):
         handle, self.path = tempfile.mkstemp(suffix=".db")
         os.close(handle)
 
+    # 释放本用例创建的资源并清理临时数据，保持测试之间互不干扰。
     def tearDown(self):
         try:
             os.unlink(self.path)
         except PermissionError:
             pass
 
+    # 构造测试使用的应用配置，显式设置与本组场景有关的开关。
     def settings(self):
         return Settings(
             host="127.0.0.1", port=8080, db_path=self.path, max_diff_bytes=10000,
@@ -108,6 +116,7 @@ class PhaseImplementationTests(unittest.TestCase):
             auto_post_review=False,
         )
 
+    # 验证 agentic 模式缺少模型时明确拒绝执行。
     def test_agentic_mode_rejects_missing_model_configuration(self):
         service = ReviewService(self.settings())
         try:
@@ -116,6 +125,7 @@ class PhaseImplementationTests(unittest.TestCase):
         finally:
             service.queue.close()
 
+    # 验证协作运行实际调用 Lead、两个 Worker 和 Critic。
     def test_agentic_mode_runs_exact_four_real_roles(self):
         store = TaskStore(self.path)
         store.create("task", "org/repo", 1, {
@@ -140,6 +150,7 @@ class PhaseImplementationTests(unittest.TestCase):
             ]
             self.assertTrue(decisions)
 
+    # 验证结构化候选保留变更差异和生成阶段的模型用量。
     def test_structured_evolution_candidate_has_diff_and_usage(self):
         generated = RootCauseEvolutionGenerator(FakeChatClient()).generate([
             {"id": 1, "category": "false_positive", "payload": {"note": "weak"}}
@@ -148,6 +159,7 @@ class PhaseImplementationTests(unittest.TestCase):
         self.assertIn("candidate-prompt", generated["change_diff"])
         self.assertEqual(1, generated["generation"]["llm_calls"])
 
+    # 验证补丁路径不能越界，原文件上下文不匹配时拒绝应用。
     def test_unified_patch_is_path_bounded_and_context_checked(self):
         patch = "--- a/app.py\n+++ b/app.py\n@@ -1,2 +1,2 @@\n-value = eval(raw)\n+value = parse(raw)\n return value\n"
         parsed = parse_unified_patch(patch, ["app.py"])
@@ -157,6 +169,7 @@ class PhaseImplementationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_unified_patch(patch.replace("app.py", "../app.py"), ["../app.py"])
 
+    # 验证修复成功必须有前后测试对比证据，不能只凭补丁生成成功。
     def test_fix_success_requires_before_after_test_evidence(self):
         self.assertFalse(RepairVerifier.compare(
             {"passed": True, "checks": []}, {"passed": True, "checks": []}
@@ -167,6 +180,7 @@ class PhaseImplementationTests(unittest.TestCase):
         )
         self.assertTrue(result["passed"])
 
+    # 验证生产数据门禁要求足够数量的真实 PR 及仓库隔离。
     def test_real_dataset_gate_requires_300_repository_isolated_prs(self):
         cases = []
         for index in range(300):

@@ -1,3 +1,5 @@
+# 生产评测与消融实验：验证真实 PR 数据来源和仓库隔离，记录角色拓扑、调用成本及配对比较。
+
 """Product-backed agentic evaluation suite for labelled PRs."""
 from collections import Counter
 import json
@@ -65,6 +67,7 @@ the exact changed path and line. Return JSON only:
 "fix":"...","test":"...","confidence":0.0}]}"""
 
 
+# 检查真实 PR 数量、来源和仓库隔离等约束，判断能否支撑生产结论。
 def validate_real_dataset(cases: List[dict], minimum_cases: int = 300) -> Dict[str, Any]:
     repositories_by_split = {}
     cases_by_split = Counter()
@@ -120,19 +123,24 @@ def validate_real_dataset(cases: List[dict], minimum_cases: int = 300) -> Dict[s
     }
 
 
+# 评测用轻量任务存储，向审查链路提供当前案例上下文。
 class _EvaluationTaskStore:
     """Minimal task input provider used by AgenticReviewer during replay."""
 
+    # 保存评测任务输入，使实际产品链路可读取当前实验配置。
     def __init__(self, task_input: dict):
         self.task_input = dict(task_input)
 
+    # 提供评测案例对应的最小任务输入，供产品审查链路读取配置。
     def get(self, _task_id: str, _tenant_id: Optional[str] = None) -> dict:
         return {"input": dict(self.task_input)}
 
 
+# 消融实验中的单模型审查组，用于与多角色协作对照。
 class SingleModelReviewer(Reviewer):
     """One-call model baseline, optionally merged with the shared 14 rules."""
 
+    # 绑定模型与规则扫描配置，初始化执行记录以统计单模型组成本。
     def __init__(
         self, arm: str, client: JsonChatClient, total_token_budget: int,
         total_time_budget_seconds: int = 120,
@@ -153,6 +161,7 @@ class SingleModelReviewer(Reviewer):
         self.context = ContextRuleReviewer()
         self._last_execution: Dict[str, Any] = {}
 
+    # 解析单模型输出，规范问题身份、位置和证据字段。
     @staticmethod
     def _parse_findings(raw_items, parsed) -> List[Finding]:
         valid = {(item.path, int(item.line)) for item in parsed.added_lines}
@@ -189,6 +198,7 @@ class SingleModelReviewer(Reviewer):
             ))
         return findings
 
+    # 合并重复预测，避免同一问题被多次统计。
     @staticmethod
     def _merge(findings: List[Finding]) -> List[Finding]:
         merged = {}
@@ -209,9 +219,11 @@ class SingleModelReviewer(Reviewer):
             key=lambda item: (severity_order[item.severity], item.path, item.line),
         )
 
+    # 使用单模型审查实现进行评测，复用通用 Diff 接口。
     def review(self, diff: str, parsed) -> List[Finding]:
         return self.review_case({"diff": diff, "repository": ""}, parsed)
 
+    # 接收完整案例上下文后执行审查，供评测器记录仓库和任务元信息。
     def review_case(self, case: dict, parsed) -> List[Finding]:
         ledger = ExecutionLedger(self.arm)
         started = time.monotonic()
@@ -235,12 +247,15 @@ class SingleModelReviewer(Reviewer):
         self._last_execution = ledger.summary()
         return self._merge(findings)
 
+    # 返回最近一次评测调用的执行账本，供成本和调用次数统计。
     def evaluation_execution(self) -> dict:
         return dict(self._last_execution)
 
+    # 返回最近一次审查的协作摘要，供实验验证实际角色拓扑。
     def evaluation_collaboration(self) -> dict:
         return {}
 
+    # 导出当前评测组的配置，便于核对和复现实验。
     def evaluation_config(self) -> dict:
         return {
             "arm": self.arm,
@@ -252,9 +267,11 @@ class SingleModelReviewer(Reviewer):
         }
 
 
+# 按实验组配置调用实际产品审查链路的适配器。
 class ProductArmReviewer:
     """Run one ablation arm through the product AgenticReviewer."""
 
+    # 按实验组构造产品审查器，固定角色、规则和预算以保证组间可比较。
     def __init__(
         self, arm: str, client: JsonChatClient, total_token_budget: int,
         total_time_budget_seconds: int = 120, evolved_skill_artifact: Optional[dict] = None,
@@ -310,9 +327,11 @@ class ProductArmReviewer:
         self._sequence = 0
         self._last_summary: Dict[str, Any] = {}
 
+    # 把 Diff 包装为评测案例，执行当前实验组的真实产品审查路径。
     def review(self, diff: str, parsed) -> list:
         return self.review_case({"diff": diff, "repository": ""}, parsed)
 
+    # 接收完整案例上下文后执行审查，供评测器记录仓库和任务元信息。
     def review_case(self, case: dict, parsed) -> list:
         self._sequence += 1
         task_id = "evaluation:%s:%d" % (self.arm, self._sequence)
@@ -325,6 +344,7 @@ class ProductArmReviewer:
         self._validate_execution()
         return findings
 
+    # 检查实际角色调用与实验组要求一致，防止名义分组与真实执行脱节。
     def _validate_execution(self) -> None:
         execution = self._last_summary.get("execution") or {}
         calls = execution.get("model_call_log") or []
@@ -346,12 +366,15 @@ class ProductArmReviewer:
                 % (self.arm, ", ".join(missing))
             )
 
+    # 返回最近一次评测调用的执行账本，供成本和调用次数统计。
     def evaluation_execution(self) -> dict:
         return dict(self._last_summary.get("execution") or {})
 
+    # 返回最近一次审查的协作摘要，供实验验证实际角色拓扑。
     def evaluation_collaboration(self) -> dict:
         return dict(self._last_summary.get("collaboration") or {})
 
+    # 导出当前评测组的配置，便于核对和复现实验。
     def evaluation_config(self) -> dict:
         return {
             "arm": self.arm,
@@ -366,11 +389,13 @@ class ProductArmReviewer:
         }
 
 
+# 为产品评测组创建审查器工厂，固定对应角色与规则配置。
 def product_reviewer_factories(
     client: JsonChatClient, total_time_budget_seconds: int = 120,
 ) -> Dict[str, Callable[[str, int], ProductArmReviewer]]:
     """Create the two agentic topology arms with one shared model client."""
 
+    # 捕获当前实验组配置，创建独立审查器实例，避免循环变量串组。
     def build(arm: str, model: str, token_budget: int) -> ProductArmReviewer:
         if str(client.model) != str(model):
             raise ValueError(
@@ -389,6 +414,7 @@ def product_reviewer_factories(
     }
 
 
+# 为消融实验组创建工厂，使各组配置可比较并可重复构造。
 def experiment_reviewer_factories(
     client: JsonChatClient, total_time_budget_seconds: int = 120,
     evolved_skill_artifact: Optional[dict] = None,
@@ -400,6 +426,7 @@ def experiment_reviewer_factories(
     empty or static Skill.
     """
 
+    # 捕获当前实验组配置，创建独立审查器实例，避免循环变量串组。
     def build(arm: str, model: str, token_budget: int) -> Reviewer:
         if str(client.model) != str(model):
             raise ValueError(
@@ -430,18 +457,24 @@ def experiment_reviewer_factories(
     }
 
 
+# 扩展基础评测，记录真实执行用量与生产声明所需信息。
 class ProductionEvaluationHarness(EndToEndEvaluationHarness):
+    # 执行单个样本的审查、匹配与修复评测，并保存可追溯的案例结果。
     def _run_case(self, reviewer, case):
+        # 代理审查调用并保存本次运行信息，供评测器统计。
         class RecordingReviewer:
+            # 保存被代理的审查器，并准备捕获本次调用的执行信息。
             def __init__(self, delegate):
                 self.delegate = delegate
                 self.name = delegate.name
                 self.findings = []
 
+            # 代理审查并捕获执行用量，供当前案例统计成本。
             def review(self, diff, parsed):
                 self.findings = self.delegate.review(diff, parsed)
                 return self.findings
 
+            # 接收完整案例上下文后执行审查，供评测器记录仓库和任务元信息。
             def review_case(self, case, parsed):
                 method = getattr(self.delegate, "review_case", None)
                 self.findings = (
@@ -521,6 +554,7 @@ class ProductionEvaluationHarness(EndToEndEvaluationHarness):
                 )
         return result
 
+    # 创建评测累计器，为各项计数和耗时设置初始值。
     @staticmethod
     def _empty_totals():
         values = EndToEndEvaluationHarness._empty_totals()
@@ -535,6 +569,7 @@ class ProductionEvaluationHarness(EndToEndEvaluationHarness):
         })
         return values
 
+    # 把一个案例的统计结果加到总计中，保持样本级与整体指标对应。
     @staticmethod
     def _accumulate(totals, result):
         EndToEndEvaluationHarness._accumulate(totals, result)
@@ -548,6 +583,7 @@ class ProductionEvaluationHarness(EndToEndEvaluationHarness):
             totals[field] += int(result.get(field, 0))
         totals["cost_microusd"] += int(float(result.get("cost_usd", 0)) * 1_000_000)
 
+    # 从累计计数计算准确率、召回率及其他评测指标，处理零分母情况。
     @staticmethod
     def _metrics(totals):
         values = EndToEndEvaluationHarness._metrics(totals)
@@ -593,6 +629,7 @@ DEFAULT_COMPARISON_METRICS = (
 )
 
 
+# 按同一样本的配对结果做 Bootstrap 重采样，估计改进幅度及不确定性。
 def paired_bootstrap_comparison(
     left: dict, right: dict, iterations: int = 2000, seed: int = 20260819,
     metrics=DEFAULT_COMPARISON_METRICS,
@@ -633,9 +670,11 @@ def paired_bootstrap_comparison(
     return output
 
 
+# 在共享案例与固定配置下比较不同协作策略。
 class FairAblationSuite:
     """Run fair, paired collaboration ablations on an identical case order."""
 
+    # 校验实验组工厂是否完整，保存模型、预算与配对比较参数；数据集由运行入口传入。
     def __init__(
         self, reviewer_factories: Mapping[str, Callable[[str, int], Any]],
         model: str, token_budget: int, require_production_ready: bool = True,
@@ -655,6 +694,7 @@ class FairAblationSuite:
         self.bootstrap_iterations = max(200, int(bootstrap_iterations))
         self.bootstrap_seed = int(bootstrap_seed)
 
+    # 汇总各角色的实际模型调用次数，核实协作成本与拓扑。
     @staticmethod
     def _role_totals(case_results: List[dict]) -> dict:
         totals = Counter()
@@ -662,6 +702,7 @@ class FairAblationSuite:
             totals.update(case.get("model_roles") or {})
         return dict(sorted(totals.items()))
 
+    # 计算同一样本在不同实验组中的差值，降低样本难度差异的影响。
     def _paired_delta(
         self, left: dict, right: dict, metric: str, seed_offset: int,
     ) -> dict:
@@ -694,12 +735,14 @@ class FairAblationSuite:
             "iterations": self.bootstrap_iterations,
         }
 
+    # 构造实验组间的配对比较结果。
     def _comparison(self, left: dict, right: dict, seed_offset: int) -> dict:
         return paired_bootstrap_comparison(
             left, right, self.bootstrap_iterations,
             self.bootstrap_seed + seed_offset,
         )
 
+    # 提取指定划分的评测结果，分别展示验证集与保留集表现。
     @staticmethod
     def _split_view(arm: dict, split: str) -> dict:
         return {
@@ -709,6 +752,7 @@ class FairAblationSuite:
             ],
         }
 
+    # 在同一数据集上运行各消融组，汇总调用、成本和配对指标差异。
     def run(self, cases: List[dict]) -> Dict[str, Any]:
         readiness = validate_real_dataset(cases)
         if self.require_production_ready and not readiness["ready"]:

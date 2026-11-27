@@ -1,3 +1,6 @@
+# 实验编排：比较受控样本上的准确率，并评估 Skill 学习、随机反馈和静态配置等实验组。
+# 训练集提供反馈，验证集决定候选是否可用，保留集用于独立检验。
+
 """Reproducible accuracy, collaboration and Agent Skill evolution experiments."""
 import hashlib
 import json
@@ -25,6 +28,7 @@ DEFAULT_CONTROLLED_DATASET = os.path.abspath(os.path.join(
 ))
 
 
+# 加载固定的受控 PR 案例，作为无需真实模型的实验输入。
 def load_controlled_pr_cases(path: Optional[str] = None) -> List[dict]:
     """Load the checked-in 100-case corpus; no cases are generated at runtime."""
     return load_jsonl(path or DEFAULT_CONTROLLED_DATASET)
@@ -46,6 +50,7 @@ SKILL_PROTECTED_METRICS = (
 )
 
 
+# 按仓库隔离组织训练、验证和保留集，避免同仓样本跨集合泄露。
 def prepare_controlled_experiment_cases(cases: Iterable[dict]) -> List[dict]:
     """Adapt the checked-in 100-case corpus for three-way experiments.
 
@@ -77,11 +82,13 @@ def prepare_controlled_experiment_cases(cases: Iterable[dict]) -> List[dict]:
     return adapted
 
 
+# 按受控制品选择规则的离线审查器，供学习机制实验使用。
 class ControlledSkillReviewer(Reviewer):
     """Deterministic Skill-policy replay for the offline fixture corpus only."""
 
     name = "controlled-offline-skill-policy"
 
+    # 从 Skill 中提取学习规则标记，并加载固定案例中的规则与风险模式目录。
     def __init__(self, artifact: dict):
         self.artifact = artifact
         content = str((artifact.get("files") or {}).get("SKILL.md", ""))
@@ -99,6 +106,7 @@ class ControlledSkillReviewer(Reviewer):
                     "risk_pattern": validation.get("risk_pattern", ""),
                 })
 
+    # 根据受控 Skill 配置筛选规则结果，用于可重复的学习对照。
     def review(self, diff: str, parsed) -> List[Finding]:
         findings = list(self.local.review(diff, parsed))
         seen = {(item.rule_id, item.path, item.line) for item in findings}
@@ -128,12 +136,14 @@ class ControlledSkillReviewer(Reviewer):
         return findings
 
 
+# 模拟模型角色协议的确定性客户端，用于受控实验。
 class ControlledExperimentClient:
     """Deterministic orchestration client; it is explicitly not an LLM."""
 
     provider = "controlled-offline"
     model = "no-llm-controlled-v1"
 
+    # 返回确定性的角色决策，同时按模型客户端契约记录调用。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         if ledger:
             ledger.record_model(
@@ -199,6 +209,7 @@ class ControlledExperimentClient:
         raise ValueError("unsupported controlled role: %s" % role)
 
 
+# 计算 Skill 制品的稳定指纹，便于比较实验输入是否一致。
 def _artifact_sha256(artifact: dict) -> str:
     rendered = json.dumps(
         artifact, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
@@ -206,21 +217,26 @@ def _artifact_sha256(artifact: dict) -> str:
     return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
 
 
+# 提取实验报告需要展示的指标字段。
 def _metric_view(report: dict) -> dict:
     metrics = report["metrics"]
     return {name: metrics.get(name) for name in ACCURACY_METRICS}
 
 
+# 编排受控和真实案例的准确率对比。
 class AccuracyExperimentSuite:
     """Experiment one: controlled Harness validation plus real-PR performance."""
 
+    # 设置真实评测所需的最少样本数，实际案例和审查器由运行入口传入。
     def __init__(self, minimum_real_cases: int = 300):
         self.minimum_real_cases = int(minimum_real_cases)
 
+    # 构造受控回放审查器，供确定性准确率实验使用。
     @staticmethod
     def controlled_reviewer() -> Reviewer:
         return CompositeReviewer([LocalRuleReviewer(), ContextRuleReviewer()])
 
+    # 在受控案例上运行预设对比并汇总准确率指标。
     def run_controlled(self, cases: Optional[List[dict]] = None) -> dict:
         cases = list(cases or load_controlled_pr_cases())
         harness = ProductionEvaluationHarness(repairer=FixtureRepairer())
@@ -245,6 +261,7 @@ class AccuracyExperimentSuite:
             "report": report,
         }
 
+    # 使用真实案例和配置的模型运行同样的评测流程。
     def run_real(
         self, cases: List[dict], reviewer: Reviewer,
         require_production_ready: bool = True, repairer=None,
@@ -265,6 +282,7 @@ class AccuracyExperimentSuite:
             "report": report,
         }
 
+    # 组织受控和可选真实实验，输出一致格式的准确率报告。
     def run(
         self, real_cases: Optional[List[dict]] = None,
         real_reviewer: Optional[Reviewer] = None,
@@ -292,9 +310,11 @@ class AccuracyExperimentSuite:
         }
 
 
+# 比较学习、静态与随机反馈等 Skill 演进策略。
 class SkillEvolutionExperimentSuite:
     """Experiment three: Static, evolved and random-feedback Skill controls."""
 
+    # 保存审查器工厂、学习门槛、重复次数和随机种子，为各组对照使用一致策略。
     def __init__(
         self, reviewer_factory: Callable[[dict], Reviewer],
         minimum_real_cases: int = 300, min_validation_f1_improvement: float = .01,
@@ -314,10 +334,12 @@ class SkillEvolutionExperimentSuite:
         self.require_production_ready = bool(require_production_ready)
         self.repairer = repairer
 
+    # 按案例的 split 字段取出指定实验划分。
     @staticmethod
     def _split(cases: Iterable[dict], name: str) -> List[dict]:
         return [item for item in cases if item["split"] == name]
 
+    # 将给定制品用于案例回放，返回统一评测指标。
     def _evaluate(self, artifact: dict, cases: List[dict], name: str) -> dict:
         reviewer = self.reviewer_factory(artifact)
         report = ProductionEvaluationHarness(repairer=self.repairer).run(
@@ -326,6 +348,7 @@ class SkillEvolutionExperimentSuite:
         report["artifact_sha256"] = _artifact_sha256(artifact)
         return report
 
+    # 从案例新增行提取反馈位置的证据文本。
     @staticmethod
     def _line_evidence(case: dict, truth: dict) -> str:
         target_path = str(truth["path"]).replace("\\", "/")
@@ -335,6 +358,7 @@ class SkillEvolutionExperimentSuite:
                 return changed.content.strip()[:240]
         return "confirmed defect in %s at line %d" % (target_path, target_line)
 
+    # 将基线或候选的错误与漏报转成后续演进可使用的反馈。
     def _collect_feedback(self, artifact: dict, train_cases: List[dict]) -> dict:
         reviewer = self.reviewer_factory(artifact)
         feedback, errors = [], []
@@ -395,6 +419,7 @@ class SkillEvolutionExperimentSuite:
             },
         }
 
+    # 构造随机反馈对照，用于检验定向学习是否比随机变化有效。
     @staticmethod
     def _random_feedback(count: int, round_number: int, rng: random.Random) -> list:
         values = []
@@ -416,6 +441,7 @@ class SkillEvolutionExperimentSuite:
             })
         return values
 
+    # 检查验证集改进幅度和受保护指标，决定候选能否进入下一阶段。
     def _validation_gate(self, baseline: dict, candidate: dict) -> dict:
         before, after = baseline["metrics"], candidate["metrics"]
         improvement = after["f1"] >= (
@@ -433,6 +459,7 @@ class SkillEvolutionExperimentSuite:
             "protected_metric_regressions": regressions,
         }
 
+    # 检查保留集是否发生超阈值退步，作为独立放行条件。
     def _holdout_gate(self, static: dict, candidate: dict) -> dict:
         before, after = static["metrics"], candidate["metrics"]
         regressions = {
@@ -446,6 +473,7 @@ class SkillEvolutionExperimentSuite:
             "catastrophic_regression": bool(regressions),
         }
 
+    # 执行一个种子下的学习和对照实验，记录每轮候选及门禁结果。
     def _run_once(
         self, cases: List[dict], static_artifact: dict, repeat_index: int,
     ) -> dict:
@@ -587,6 +615,7 @@ class SkillEvolutionExperimentSuite:
             },
         }
 
+    # 汇总多次实验的指标，减少单个随机种子对结论的影响。
     @staticmethod
     def _aggregate(runs: List[dict]) -> dict:
         output = {}
@@ -610,6 +639,7 @@ class SkillEvolutionExperimentSuite:
                 }
         return output
 
+    # 按实验种子执行多组学习对照，并聚合结果。
     def run(self, cases: List[dict], static_artifact: dict) -> dict:
         readiness = validate_real_dataset(cases, self.minimum_real_cases)
         if self.require_production_ready and not readiness["ready"]:

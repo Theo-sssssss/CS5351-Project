@@ -1,3 +1,5 @@
+# 上下文管理测试：覆盖风险排序、观察压缩和记忆进入模型输入的集成路径。
+
 import json
 import os
 import tempfile
@@ -10,6 +12,7 @@ from evoagent.memory import MemoryManager
 from evoagent.store import TaskStore
 
 
+# 构造包含多个变更块和风险信号的大 Diff，用于触发上下文压缩。
 def large_diff():
     values = []
     for index in range(12):
@@ -30,13 +33,16 @@ def large_diff():
     return "\n".join(values) + "\n"
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class CapturingClient:
     provider = "fake"
     model = "fake-model"
 
+    # 保存构造参数并初始化实例状态；核心成员为 tasks。
     def __init__(self):
         self.tasks = []
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         managed = json.loads(user)
         task = json.loads(managed["task"])
@@ -69,7 +75,9 @@ class CapturingClient:
         raise AssertionError((role, task))
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class ContextManagerTests(unittest.TestCase):
+    # 验证大 Diff 按风险分块压缩，重要代码在预算内优先保留。
     def test_large_diff_uses_risk_ranked_hunk_map_reduce(self):
         manager = ContextManager(
             context_window_tokens=4096, input_token_budget=2500,
@@ -90,6 +98,7 @@ class ContextManagerTests(unittest.TestCase):
         self.assertLess(compressed["compressed_estimated_tokens"], compressed["original_estimated_tokens"])
         self.assertLessEqual(estimate_tokens(compressed), 1000)
 
+    # 验证旧工具结果会被概括，但证据引用仍可追踪。
     def test_old_observations_are_summarized_and_evidence_is_retained(self):
         manager = ContextManager(
             observation_token_budget=350, recent_observations=1,
@@ -113,6 +122,7 @@ class ContextManagerTests(unittest.TestCase):
         self.assertIn("read_file:4", rendered)
         self.assertLess(estimate_tokens(compact), 500)
 
+    # 验证模型请求发送前已按上下文预算裁剪输入。
     def test_managed_context_is_trimmed_before_model_call(self):
         manager = ContextManager(
             context_window_tokens=3000, input_token_budget=1200,
@@ -136,15 +146,19 @@ class ContextManagerTests(unittest.TestCase):
         self.assertEqual(7, compact_task["candidate_findings"][7]["finding_index"])
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class ContextMemoryIntegrationTests(unittest.TestCase):
+    # 为每个测试创建独立夹具和临时资源，避免前一个用例的状态影响当前断言。
     def setUp(self):
         handle, self.path = tempfile.mkstemp(suffix=".db")
         os.close(handle)
         self.store = TaskStore(self.path)
 
+    # 释放本用例创建的资源并清理临时数据，保持测试之间互不干扰。
     def tearDown(self):
         os.unlink(self.path)
 
+    # 验证召回记忆和压缩 Diff 都能进入角色实际收到的上下文。
     def test_review_recall_and_semantic_diff_reach_agent_context(self):
         diff = large_diff()
         self.store.create("task", "org/repo", 1, {

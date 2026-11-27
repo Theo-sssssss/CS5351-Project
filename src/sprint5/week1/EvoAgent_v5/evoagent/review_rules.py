@@ -1,3 +1,5 @@
+# 上下文启发式规则：检测新增代码中的风险信号，作为后续审查和评测的候选输入。
+
 """Deterministic supplemental review rules used by evaluation and replay."""
 import re
 
@@ -6,6 +8,7 @@ from .finding_identity import canonical_cwe
 from .reviewer import Reviewer
 
 
+# 补充上下文相关风险线索的规则扫描器。
 class ContextRuleReviewer(Reviewer):
     """Review added lines for supplemental security and reliability risks."""
 
@@ -24,6 +27,7 @@ class ContextRuleReviewer(Reviewer):
         ),
     ]
 
+    # 在新增行中应用上下文风险规则，输出带明确位置的候选问题。
     def review(self, diff: str, parsed) -> list:
         findings = []
         for line in parsed.added_lines:

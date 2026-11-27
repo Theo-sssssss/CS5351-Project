@@ -1,3 +1,6 @@
+# Agent 仓库工具：限制访问路径和输出规模，提供检索、源码定位、AST、Git 与检查结果。
+# 工具结果携带证据标识；执行检查使用临时副本和受限环境，但并未禁用网络。
+
 """Repository-level factual tools exposed to LLM agents through strict schemas."""
 import ast
 import hashlib
@@ -26,6 +29,7 @@ CONFIG_NAMES = {
 }
 
 
+# 为工具输出生成可引用的证据记录，保留工具来源和原始结果。
 def _evidence(tool: str, payload: Any) -> Dict[str, Any]:
     rendered = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
     return {
@@ -37,32 +41,37 @@ def _evidence(tool: str, payload: Any) -> Dict[str, Any]:
     }
 
 
+# 绑定本次仓库、Diff 与账本，向各角色提供受限工具。
 class RepositoryToolSuite:
+    # 确认本地仓库目录是否存在，绑定本次 Diff、解析结果、账本和测试命令。
     def __init__(
         self, root: str, diff: str, parsed: ParsedDiff,
         ledger: Optional[ExecutionLedger] = None,
         test_command: str = "",
     ):
-        candidate = os.path.abspath(root) if root else ""
+        candidate = os.path.realpath(root) if root else ""
         self.root = candidate if candidate and os.path.isdir(candidate) else ""
         self.diff = diff
         self.parsed = parsed
         self.ledger = ledger
         self.test_command = test_command
 
+    # 表示本次审查是否有可访问的本地仓库目录。
     @property
     def repository_available(self) -> bool:
         return bool(self.root)
 
+    # 将相对路径解析到仓库内，并检查规范化路径是否越出根目录。
     def _safe_path(self, relative: str) -> str:
         if not self.root:
             raise ValueError("repository checkout is unavailable for this review")
         relative = str(relative).replace("\\", "/").lstrip("/")
-        target = os.path.abspath(os.path.join(self.root, relative))
-        if target != self.root and not target.startswith(self.root + os.sep):
+        target = os.path.realpath(os.path.join(self.root, relative))
+        if os.path.normcase(os.path.commonpath([self.root, target])) != os.path.normcase(self.root):
             raise ValueError("path escapes repository root")
         return target
 
+    # 遍历仓库文件，跳过依赖目录及过大文件，并限制收集总量。
     def _files(self) -> Iterable[str]:
         if not self.root:
             return []
@@ -80,6 +89,7 @@ class RepositoryToolSuite:
                     return values
         return values
 
+    # 返回有数量上限的仓库文件目录，同时说明可用性与截断情况。
     def list_repository(self, limit: int = 500) -> dict:
         files = list(self._files())[:max(1, min(int(limit), 2000))]
         return _evidence("list_repository", {
@@ -87,6 +97,7 @@ class RepositoryToolSuite:
             "truncated": len(files) >= min(int(limit), 2000),
         })
 
+    # 逐行执行不区分大小写的文本搜索，限制命中数和每行输出长度。
     def search_repository(self, query: str, limit: int = 50) -> dict:
         query = str(query).strip()
         if not query:
@@ -104,6 +115,7 @@ class RepositoryToolSuite:
                 continue
         return _evidence("search_repository", hits)
 
+    # 在原始 Diff 中搜索文本，返回 Diff 自身的行号而非新文件行号。
     def search_diff(self, query: str, limit: int = 50) -> dict:
         query = str(query).strip().lower()
         if not query:
@@ -115,6 +127,7 @@ class RepositoryToolSuite:
         ][:max(1, min(int(limit), 200))]
         return _evidence("search_diff", hits)
 
+    # 按新文件行号读取指定区间，并限制最大行数和输出长度。
     def read_file(self, path: str, start_line: int = 1, end_line: int = 240) -> dict:
         start = max(1, int(start_line))
         end = min(max(start, int(end_line)), start + 499)
@@ -127,6 +140,7 @@ class RepositoryToolSuite:
         }
         return _evidence("read_file", payload)
 
+    # 查证某个文件和行号是否属于此次 Diff 的新增行。
     def changed_line(self, path: str, line: int) -> dict:
         match = next((
             item for item in self.parsed.added_lines
@@ -138,6 +152,7 @@ class RepositoryToolSuite:
         )
         return _evidence("changed_line", payload)
 
+    # 用 Python AST 查找符号定义、调用者和被调用者，形成局部调用关系线索。
     def symbol(self, name: str) -> dict:
         name = str(name).strip()
         if not name:
@@ -178,6 +193,7 @@ class RepositoryToolSuite:
             "callers": callers[:100], "callees": callees[:100],
         })
 
+    # 依据源码文件名或符号名匹配测试路径，并按相关度排序。
     def locate_tests(self, path: str = "", symbol: str = "") -> dict:
         tokens = {str(symbol).lower()} if symbol else set()
         if path:
@@ -194,6 +210,7 @@ class RepositoryToolSuite:
         candidates.sort(key=lambda item: (-item["relevance"], item["path"]))
         return _evidence("locate_tests", candidates[:100])
 
+    # 读取依赖、CI 和权限等项目配置，限制文件数及每份内容大小。
     def read_project_controls(self) -> dict:
         selected = []
         for relative in self._files():
@@ -210,6 +227,7 @@ class RepositoryToolSuite:
                     break
         return _evidence("read_project_controls", selected)
 
+    # 解析 Python 文件并报告语法和敏感调用；其他语言明确返回未支持状态。
     def ast_analyze(self, path: str) -> dict:
         target = self._safe_path(path)
         source = Path(target).read_text(encoding="utf-8", errors="replace")
@@ -241,6 +259,7 @@ class RepositoryToolSuite:
             "note": "Tree-sitter is not installed; non-Python AST analysis is unavailable.",
         })
 
+    # 查询目标附近的 Git 日志和 blame，帮助解释变更历史。
     def git_context(self, path: str, line: int = 1) -> dict:
         target = self._safe_path(path)
         if not os.path.isdir(os.path.join(self.root, ".git")) or not shutil.which("git"):
@@ -261,6 +280,7 @@ class RepositoryToolSuite:
             })
         return _evidence("git_context", {"available": True, "path": path, "results": outputs})
 
+    # 运行已安装的固定扫描命令，限制环境变量、耗时和输出大小。
     def run_scanners(self) -> dict:
         """Run installed, fixed-command analyzers. User input never becomes a command."""
         if not self.root:
@@ -293,6 +313,7 @@ class RepositoryToolSuite:
                 runs.append({"name": name, "available": True, "timed_out": True})
         return _evidence("run_scanners", {"available": True, "runs": runs})
 
+    # 复制仓库后执行编译或管理员配置的测试，结果说明实际隔离能力。
     def run_repository_checks(self, kind: str = "compile") -> dict:
         """Run fixed checks in an isolated repository copy with a restricted environment."""
         kind = str(kind).strip().lower()
@@ -342,6 +363,7 @@ class RepositoryToolSuite:
                 }
         return _evidence("test", payload)
 
+    # 按角色权限构造工具注册表，统一暴露参数 Schema 与实现函数。
     def registry(self, role: str, allowed: Optional[Set[str]] = None) -> ToolRegistry:
         specs = {
             "list_repository": (
@@ -410,6 +432,7 @@ class RepositoryToolSuite:
         for name in sorted(selected.intersection(specs)):
             description, schema, handler = specs[name]
 
+            # 包装实际工具调用，记录耗时和成功或失败状态，再返回结果或继续抛出异常。
             def wrapped(_handler=handler, _name=name, **arguments):
                 started = time.monotonic()
                 try:

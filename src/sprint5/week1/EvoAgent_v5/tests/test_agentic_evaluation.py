@@ -1,3 +1,5 @@
+# 多 Agent 评测测试：核对共享规则集、实际角色拓扑和生产声明的数据要求。
+
 import json
 import unittest
 
@@ -19,10 +21,12 @@ DIFF = (
 )
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class FakeClient:
     provider = "fake"
     model = "fake-model"
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         if ledger:
             ledger.record_model(
@@ -81,7 +85,9 @@ class FakeClient:
         raise AssertionError(role)
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class AgenticEvaluationTests(unittest.TestCase):
+    # 验证实验组共享同一组 14 条规则，且调用日志符合各组真实角色拓扑。
     def test_agentic_arms_share_exactly_fourteen_rules_and_real_role_topologies(self):
         self.assertEqual(14, len(LocalRuleReviewer.RULES) + len(ContextRuleReviewer.RULES))
         expected_calls = {
@@ -105,6 +111,7 @@ class AgenticEvaluationTests(unittest.TestCase):
             self.assertEqual(calls, actual)
             self.assertEqual(14, reviewer.evaluation_config()["deterministic_rules"])
 
+    # 验证非生产数据允许调试，但不能据此给出生产效果结论。
     def test_non_production_data_can_debug_but_cannot_prove_claims(self):
         cases = []
         for index, split in enumerate(("train", "validation", "holdout"), 1):

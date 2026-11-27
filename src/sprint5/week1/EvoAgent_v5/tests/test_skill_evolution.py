@@ -1,3 +1,5 @@
+# Skill 演进测试：覆盖标准包加载、Worker 使用、候选回放、反馈学习与租户版本覆盖。
+
 import json
 import os
 import tempfile
@@ -19,6 +21,7 @@ RISK_DIFF = "--- a/a.py\n+++ b/a.py\n@@ -1 +1 @@\n-old\n+dangerous_call(data)\n"
 CLEAN_DIFF = "--- a/b.py\n+++ b/b.py\n@@ -1 +1 @@\n-old\n+safe_call(data)\n"
 
 
+# 生成包含合法 frontmatter 与指导正文的测试 Skill 文本。
 def skill_markdown(name="review-dangerous-calls", include_rule=True):
     guidance = (
         "\n## Confirmed SEC-DANGEROUS-CALL guidance\n\n"
@@ -37,14 +40,17 @@ Use changed-line evidence and report only actionable defects.%s
 """ % (name, guidance)
 
 
+# 将测试 Skill 文本包装成标准版本制品。
 def artifact(name="review-dangerous-calls", include_rule=True):
     return validate_artifact(skill_markdown(name, include_rule), name)
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class SkillAwareClient:
     provider = "fake"
     model = "skill-aware"
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         if ledger:
             ledger.record_model(role, self.provider, self.model, {
@@ -96,16 +102,20 @@ class SkillAwareClient:
         raise AssertionError(role)
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class SkillEvolutionTests(unittest.TestCase):
+    # 为每个测试创建独立夹具和临时资源，避免前一个用例的状态影响当前断言。
     def setUp(self):
         handle, self.path = tempfile.mkstemp(suffix=".db")
         os.close(handle)
         self.store = TaskStore(self.path)
         self.client = SkillAwareClient()
 
+    # 释放本用例创建的资源并清理临时数据，保持测试之间互不干扰。
     def tearDown(self):
         os.unlink(self.path)
 
+    # 在测试数据库中写入验证与保留案例，满足演进门禁的样本要求。
     def seed_cases(self):
         self.store.save_evaluation_case(
             "danger-validation", "validation", RISK_DIFF,
@@ -114,6 +124,7 @@ class SkillEvolutionTests(unittest.TestCase):
         )
         self.store.save_evaluation_case("clean-holdout", "holdout", CLEAN_DIFF, [], "test")
 
+    # 构造使用测试回放器的 Skill 演进引擎。
     def engine(self):
         return SkillEvolutionEngine(
             self.store,
@@ -121,6 +132,7 @@ class SkillEvolutionTests(unittest.TestCase):
             min_cases=1, max_cases=10, min_improvement=.01, min_holdout_cases=1,
         )
 
+    # 验证标准 SKILL.md 包及资源可被加载，无需执行 Python 插件代码。
     def test_registry_loads_standard_skill_and_resources_without_python(self):
         with tempfile.TemporaryDirectory() as root:
             directory = os.path.join(root, "review-dangerous-calls")
@@ -141,6 +153,7 @@ class SkillEvolutionTests(unittest.TestCase):
             registry.reload()
             self.assertIsNone(registry.get_agent_skill("review-dangerous-calls"))
 
+    # 验证随项目提供的 Agent Skill 可以被目录扫描发现。
     def test_bundled_agent_skills_are_discoverable(self):
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "skills"))
         registry = SkillRegistry(root)
@@ -154,6 +167,7 @@ class SkillEvolutionTests(unittest.TestCase):
             self.assertEqual("agent-skill", item["kind"])
             self.assertTrue(item["description"])
 
+    # 验证 Skill 必须有合法 frontmatter，且名称与目录一致。
     def test_skill_md_requires_frontmatter_and_matching_directory_name(self):
         with self.assertRaisesRegex(ValueError, "frontmatter"):
             AgentSkill.from_markdown("# Missing metadata")
@@ -163,6 +177,7 @@ class SkillEvolutionTests(unittest.TestCase):
                 expected_name="different-name",
             )
 
+    # 验证分派到的 Skill 正文进入 Worker 的真实执行上下文。
     def test_agent_skill_body_is_selected_and_runs_through_worker_graph(self):
         reviewer = AgentSkillReplayReviewer(artifact(), self.client)
         findings = reviewer.review(RISK_DIFF, parse_unified_diff(RISK_DIFF))
@@ -170,6 +185,7 @@ class SkillEvolutionTests(unittest.TestCase):
         summary = reviewer.agentic.collaboration_summary("skill-replay:review-dangerous-calls:1")
         self.assertEqual(["review-dangerous-calls"], summary["collaboration"]["agent_skills"])
 
+    # 验证候选 Skill 经回放放行后激活并持久化。
     def test_candidate_skill_md_replay_activates_and_persists(self):
         self.seed_cases()
         result = self.engine().propose("review-dangerous-calls", artifact())
@@ -180,13 +196,14 @@ class SkillEvolutionTests(unittest.TestCase):
         self.assertEqual(2, active["artifact"]["schema_version"])
         self.assertEqual(["SKILL.md"], result["candidate_change"]["changed_files"])
 
+    # 验证确认的反馈学习结果写入 SKILL.md 指导块。
     def test_auto_evolution_writes_learned_guidance_into_skill_md(self):
         self.seed_cases()
         self.store.create("task", "org/repo", 1, {"source": "test"})
         self.store.save_task_payload("task", RISK_DIFF)
         self.store.record_failure_case("task", "missed_issue", {"finding": {
             "rule_id": "SEC-DANGEROUS-CALL", "severity": "high", "path": "a.py", "line": 1,
-        }})
+        }}, "review-dangerous-calls")
         result = self.engine().auto_propose("review-dangerous-calls")
         self.assertEqual("activated", result["decision"])
         content = self.store.get_active_skill_artifact(
@@ -196,6 +213,29 @@ class SkillEvolutionTests(unittest.TestCase):
         self.assertIn("dangerous_call(data)", content)
         self.assertTrue(self.store.list_failure_cases()[0]["resolved"])
 
+    # 验证自动演进只消费归属于目标 Skill 的反馈，其他领域反馈保持待处理。
+    def test_auto_evolution_does_not_absorb_other_skill_feedback(self):
+        self.seed_cases()
+        for task_id in ("target-task", "other-task"):
+            self.store.create(task_id, "org/repo", 1, {"source": "test"})
+            self.store.save_task_payload(task_id, RISK_DIFF)
+        self.store.record_failure_case("target-task", "missed_issue", {"finding": {
+            "rule_id": "SEC-DANGEROUS-CALL", "severity": "high", "path": "a.py", "line": 1,
+        }}, "review-dangerous-calls")
+        self.store.record_failure_case("other-task", "missed_issue", {"finding": {
+            "rule_id": "DB-UNBOUNDED-QUERY", "severity": "medium", "path": "db.py", "line": 9,
+            "evidence": "query_without_limit()",
+        }}, "database-review")
+
+        result = self.engine().auto_propose("review-dangerous-calls")
+
+        self.assertEqual(["SEC-DANGEROUS-CALL"], result["learned_rule_ids"])
+        target = self.store.list_failure_cases(skill_name="review-dangerous-calls")[0]
+        unrelated = self.store.list_failure_cases(skill_name="database-review")[0]
+        self.assertTrue(target["resolved"])
+        self.assertFalse(unrelated["resolved"])
+
+    # 验证活动 Skill 按租户隔离，并在该租户中覆盖同名磁盘版本。
     def test_active_agent_skills_are_tenant_isolated_and_override_disk(self):
         self.store.save_skill_artifact(
             "review-dangerous-calls", artifact(), 1.0, True, "tenant-a",

@@ -1,6 +1,11 @@
+# PostgreSQL 驱动，binary extra 提供预构建运行依赖。
 psycopg[binary]>=3.1,<4
+# Redis Streams 队列客户端。
 redis>=5,<7
+# GitHub App 私钥签名所需的 JWT 与加密支持。
 PyJWT[crypto]>=2.8,<3
+# 执行追踪 SDK 及下方 OTLP HTTP 导出器。
 opentelemetry-sdk>=1.24,<2
 opentelemetry-exporter-otlp-proto-http>=1.24,<2
+# 解析 SKILL.md 的 YAML frontmatter 元数据。
 PyYAML>=5.4,<7

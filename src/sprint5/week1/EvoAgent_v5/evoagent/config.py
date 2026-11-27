@@ -1,3 +1,5 @@
+# 配置入口：加载 .env 与进程环境变量，解析模型供应商预设并检查运行参数。
+
 import os
 import re
 from dataclasses import dataclass
@@ -7,6 +9,7 @@ from typing import Dict, Iterable, Optional
 _DOTENV_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
+# 加载本地环境配置，保留已有进程环境变量的优先级。
 def load_dotenv(paths: Optional[Iterable[str]] = None) -> None:
     """Load local dotenv files without overriding real process environment values.
 
@@ -39,12 +42,14 @@ def load_dotenv(paths: Optional[Iterable[str]] = None) -> None:
                 continue
             if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
                 value = value[1:-1]
+            # 先读根目录 .env，再读包内 .env；setdefault 同时保证进程环境变量优先。
             os.environ.setdefault(key, value)
 
 
 load_dotenv()
 
 
+# 读取正整数环境变量，未配置时使用默认值，零或负值会被拒绝。
 def _int(name: str, default: int) -> int:
     value = int(os.getenv(name, str(default)))
     if value <= 0:
@@ -52,10 +57,12 @@ def _int(name: str, default: int) -> int:
     return value
 
 
+# 把环境变量中的布尔写法转换为开关值。
 def _bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
 
+# 读取非负整数配置，拒绝超出合法范围的值。
 def _non_negative_int(name: str, default: int) -> int:
     value = int(os.getenv(name, str(default)))
     if value < 0:
@@ -63,6 +70,7 @@ def _non_negative_int(name: str, default: int) -> int:
     return value
 
 
+# 应用配置数据对象，集中保存服务、模型、队列与演进参数。
 @dataclass(frozen=True)
 class Settings:
     host: str
@@ -80,6 +88,7 @@ class Settings:
     database_url: str = ""
     redis_url: str = ""
     async_workers: int = 2
+    # 记忆开关、召回数量与短期观察有效期；时间参数单位为秒。
     memory_enabled: bool = True
     memory_recall_limit: int = 6
     memory_working_ttl_seconds: int = 86400
@@ -93,11 +102,13 @@ class Settings:
     openrouter_api_key: str = ""
     openrouter_site_url: str = ""
     openrouter_app_name: str = "EvoAgent"
+    # 提示词和 Skill 回放门禁：每次样本上限、最小改进及允许的指标退步。
     eval_max_cases: int = 5
     eval_min_cases: int = 3
     eval_min_improvement: float = 0.01
     eval_min_holdout_cases: int = 2
     eval_max_metric_regression: float = 0.0
+    # 登录会话与租户设置；是否启用认证决定 HTTP 入口的身份解析方式。
     auth_required: bool = False
     auth_secret: str = ""
     bootstrap_admin_username: str = ""
@@ -118,7 +129,10 @@ class Settings:
     alert_smtp_host: str = ""
     alert_email_to: str = ""
     continuous_eval_seconds: int = 0
+    # 角色循环预算与上下文预算分别约束累计调用量和单次输入大小。
     agent_token_budget: int = 8000
+    review_task_token_budget: int = 64000
+    review_batching_enabled: bool = True
     agent_time_budget_seconds: int = 60
     agent_context_window_tokens: int = 32768
     agent_context_input_tokens: int = 20000
@@ -133,6 +147,7 @@ class Settings:
     evaluation_min_f1_improvement: float = 0.03
     evaluation_min_high_risk_improvement: float = 0.05
 
+    # 合并供应商预设与环境配置，生成模型端点、密钥、模型名和附加请求头。
     def resolved_llm(self) -> Dict[str, object]:
         """Resolve a named provider to the existing OpenAI-compatible transport."""
         provider = self.llm_provider.strip().lower()
@@ -203,6 +218,7 @@ class Settings:
             }
         raise ValueError("unsupported EVOAGENT_LLM_PROVIDER: %s" % self.llm_provider)
 
+    # 检查演进评测的样本数和门禁阈值，避免配置无效时启动实验。
     def validate_evolution(self) -> None:
         if self.eval_min_cases > self.eval_max_cases:
             raise ValueError("EVOAGENT_EVAL_MIN_CASES cannot exceed EVOAGENT_EVAL_MAX_CASES")
@@ -225,6 +241,7 @@ class Settings:
         if self.evaluation_min_public_prs < 300:
             raise ValueError("EVOAGENT_EVALUATION_MIN_PUBLIC_PRS must be at least 300")
 
+    # 从环境变量构造应用配置，并统一解析整数、布尔值和供应商设置。
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
@@ -288,6 +305,8 @@ class Settings:
                 "EVOAGENT_CONTINUOUS_EVAL_SECONDS", 0
             ),
             agent_token_budget=_int("EVOAGENT_AGENT_TOKEN_BUDGET", 8000),
+            review_task_token_budget=_int("EVOAGENT_REVIEW_TASK_TOKEN_BUDGET", 64000),
+            review_batching_enabled=_bool("EVOAGENT_REVIEW_BATCHING_ENABLED", True),
             agent_time_budget_seconds=_int("EVOAGENT_AGENT_TIME_BUDGET_SECONDS", 60),
             agent_context_window_tokens=_int(
                 "EVOAGENT_AGENT_CONTEXT_WINDOW_TOKENS", 32768

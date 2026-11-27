@@ -1,39 +1,59 @@
-# EvoAgent V5 Evaluation Results
+# EvoAgent V5 Current Delivery Evaluation — 27 November 2026
 
-## Scope and reproducibility
+Raw files referenced below are in `docs/final-submission/evidence/evaluation/current-source-20261127/` at the repository root.
 
-The V5 automated test suite passed all 70 tests using the project's Python environment. Two offline datasets supplied with the recovered EvoAgent project were used for the experiments: `evaluation_data/pr_diff_100.jsonl` (100 cases) and `evaluation_data/prompt_evolution_130.jsonl` (130 cases). Both identify their provenance as `offline-fixture`. The controlled experiment used repository-disjoint train, validation, and holdout splits of 60, 20, and 20 cases. The prompt evolution replay used 104 validation and 26 holdout cases.
+Fresh execution from the current 99-file source ZIP using Python 3.11.5. Both scripts exited successfully. The source archive SHA-256, dataset file hashes, commands, seed (20260819), bootstrap iterations (1000) and durations are recorded in `run-metadata.json`. Dependency versions are in `dependencies.txt`.
 
-Run from the V5 project directory with dependencies installed:
+## Protocol and scope
+
+Execution mode: `controlled-offline-no-llm`. These runs used deterministic rules and simulated reviewer orchestration, not a real language model. The 100-case fixture has 40 risk cases and 60 clean cases. Its repository-disjoint split is 60 train, 20 validation and 20 holdout. No new real-PR pilot or labelled real-world accuracy study was run.
+
+## Five-arm aggregate comparison: all 100 cases
+
+| Arm | TP | FP | FN | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Single simulated model | 25 | 5 | 15 | 83.33% | 62.50% | 71.43% |
+| Single simulated model with scanner | 33 | 7 | 7 | 82.50% | 82.50% | 82.50% |
+| Multi-agent without Critic | 33 | 7 | 7 | 82.50% | 82.50% | 82.50% |
+| Full agentic workflow | 33 | 0 | 7 | 100.00% | 82.50% | 90.41% |
+| Full workflow with evolved Skill | 33 | 0 | 7 | 100.00% | 82.50% | 90.41% |
+
+These figures pool train, validation and holdout. They reproduce the previously reported aggregate metrics on this fixed synthetic dataset. They must not be presented as held-out accuracy.
+
+## Held-out comparison: 20 cases
+
+| Arm | TP | FP | FN | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Single simulated model | 3 | 0 | 5 | 100.00% | 37.50% | 54.55% |
+| Single simulated model with scanner | 5 | 0 | 3 | 100.00% | 62.50% | 76.92% |
+| Multi-agent without Critic | 5 | 0 | 3 | 100.00% | 62.50% | 76.92% |
+| Full agentic workflow | 5 | 0 | 3 | 100.00% | 62.50% | 76.92% |
+| Full workflow with evolved Skill | 5 | 0 | 3 | 100.00% | 62.50% | 76.92% |
+
+The evolved Skill adds zero held-out F1 compared with the matched full workflow. Critic versus no Critic and multi-agent versus single model with scanner also have zero held-out F1 difference here. Scanner versus single simulated model has a reported +22.37 percentage-point held-out F1 difference. This is a result for the fixture harness.
+
+## Separate Skill-policy experiment
+
+Static, evolved and random-feedback policies each measured precision 100.00%, recall 37.50% and F1 54.55% on their held-out comparison. The validation candidate was rejected for insufficient F1 gain. These are separate arms from the full-workflow comparison above.
+
+## Separate 130-case prompt replay
+
+| Split | Version | Precision | Recall | F1 |
+| --- | --- | ---: | ---: | ---: |
+| validation | baseline | 100.00% | 50.00% | 66.67% |
+| validation | candidate | 100.00% | 100.00% | 100.00% |
+| holdout | baseline | 100.00% | 50.00% | 66.67% |
+| holdout | candidate | 100.00% | 100.00% | 100.00% |
+
+The replay used 104 validation and 26 holdout cases. Its isolated offline record has decision `activated`, while `release_gate.production_activation_allowed` is `false`: numerical checks passed, but production provenance failed. Offline replay activation is not production publication.
+
+## Reproduction
+
+From a fresh extraction of the matching source ZIP with dependencies installed:
 
 ```bash
-python3 -m unittest discover -s tests -q
-python3 scripts/run_controlled_experiments.py
-python3 scripts/run_prompt_evolution_proof.py --output-dir output/prompt-evolution-proof-new-run
+python scripts/run_controlled_experiments.py --seed 20260819 --bootstrap-iterations 1000 --output /path/to/fresh-output/controlled/evaluation.json
+python scripts/run_prompt_evolution_proof.py --output-dir /path/to/fresh-output/prompt
 ```
 
-The prompt evolution proof requires a fresh output directory for each run because it writes an immutable SQLite run record. Full machine-readable outputs from this run are in `output/controlled-experiments/evaluation.json` and `output/prompt-evolution-proof/prompt-evolution-proof.json`.
-
-## Controlled offline comparison
-
-The experiment ran without an LLM. It measures deterministic rules, simulated reviewer orchestration, and Skill selection gates; arm names do not imply real model calls. Across the 100-case controlled set:
-
-| Arm | Precision | Recall | F1 |
-| --- | ---: | ---: | ---: |
-| Single simulated model | 83.33% | 62.50% | 71.43% |
-| Single simulated model with scanner | 82.50% | 82.50% | 82.50% |
-| Multi-agent without Critic | 82.50% | 82.50% | 82.50% |
-| Full agentic workflow | 100.00% | 82.50% | 90.41% |
-| Full agentic workflow with evolved Skill | 100.00% | 82.50% | 90.41% |
-
-These overall arm scores are not the same measure as the paired holdout comparisons. On the held-out split, the F1 difference for Critic versus no Critic, multi-agent versus single with scanner, and evolved Skill versus full agentic was **0**. Scanner versus single-model baseline improved holdout F1 by **22.37 percentage points** in this offline setup.
-
-The Skill evolution experiment compared static, evolved, and random-feedback Skills. All three had F1 **54.55%** on the measured split. The validation candidate did not meet the required improvement threshold, and the holdout activation gate remained blocked. This is a negative result for Skill improvement in this controlled experiment.
-
-## Prompt evolution replay
-
-On a separate 130-case offline fixture set, feedback-driven Prompt v2 improved F1 from **66.67% to 100.00%** on validation and from **66.67% to 100.00%** on holdout. The numerical gate passed. However, the production provenance gate failed and production activation was blocked. This demonstrates the replay and gating mechanism on fixtures, not real-world effectiveness.
-
-## Evidence boundary and next evaluation
-
-The available datasets are offline fixtures, and the controlled experiment did not call a real LLM. Accordingly, these results cannot support claims that EvoAgent outperforms external code-review tools or achieves these metrics on real GitHub pull requests. A real-world comparison requires a human-labelled public or historical PR dataset, a specified baseline and model, identical case ordering and budgets across arms, and a saved experimental result. V5's production-readiness validator defaults to at least 300 cases with repository-isolated train, validation, and hidden holdout splits. The 300-case threshold is the tool's own gate, not a separate numerical requirement stated in the course slides.
+Use a new prompt output directory because the proof run writes an immutable SQLite record. The temporary database is not distributed as application state. Raw JSON results and console logs are retained beside this summary. No benchmark labels, matching rules, thresholds or source files were edited for this rerun.

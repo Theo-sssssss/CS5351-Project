@@ -21,6 +21,14 @@
 - 自动修复后的编译/测试门禁、灰度发布与影子流量
 - OpenTelemetry Trace、Prometheus 指标和持久化告警
 
+## 分批审查和版本管理
+
+- 新审查自动按文件、hunk 和变更行拆批。每批保留变更原文与行号，二进制和文件元信息单独列出。任务中心展示已审范围、预算和失败原因。
+- Web 提交使用异步任务。Token 不足时任务状态为 `PAUSED_BUDGET`，在任务详情追加额度，或调用 `POST /v1/tasks/{id}/resume` 并传 `additional_tokens`。已完成批次和角色阶段会复用。`EVOAGENT_REVIEW_TASK_TOKEN_BUDGET` 控制初始额度。
+- 对完整的文本审查报告，可通过 `POST /v1/tasks/{id}/accept` 提交详情中返回的 `report_revision` 确认。确认是站内记录，与 GitHub 评论、逐条反馈和修复分支各自独立。暂停期间也能导出已完成批次的报告。
+- 演进工作台支持 Prompt 和 Skill 候选回放、对比和人工发布。评测通过显示 `ready`，管理员可通过 `POST /v1/versions/{prompt|skill}/{name}/{version}/publish` 激活，或传 `canary_percent` 进行灰度。选择历史已通过的版本可回滚。Prompt 是共享配置，由默认租户的管理员管理。Skill 版本按租户隔离。
+- 部署验证时可用 `EVOAGENT_REVIEW_BATCHING_ENABLED=false` 创建走旧引擎的任务。存量任务按创建时的引擎续跑，历史报告可读。用 `python scripts/compare_review_engines.py <评测集.jsonl> --limit 10` 在相同模型和样本上对照新旧引擎，省略 `--limit` 可跑完整数据集。旧引擎未知的覆盖率会标为 `null`。
+
 ## 快速开始
 
 项目使用 Python 3.11。先安装锁定范围内的运行依赖，并在同一个 PowerShell 窗口中配置本地管理员：
@@ -214,7 +222,7 @@ Invoke-RestMethod https://<公网域名>/health
 | `GET` | `/v1/tasks/{id}/report` | 获取 Markdown 报告 |
 | `GET` | `/v1/tasks/{id}/feedback` | 获取该已完成任务的反馈历史 |
 | `POST` | `/v1/tasks/{id}/fix` | 创建自动修复分支和提交 |
-| `POST` | `/v1/tasks/{id}/feedback` | 回流误报、漏报或坏修复 |
+| `POST` | `/v1/tasks/{id}/feedback` | 回流误报、漏报或坏修复；`skill_name` 指定反馈归属，默认 `llm-review` |
 | `POST` | `/v1/tasks/{id}/cancel` | 请求取消任务 |
 | `POST` | `/v1/tasks/{id}/resume` | 从最近 checkpoint 续跑任务 |
 | `POST` | `/webhooks/github` | 接收 GitHub PR webhook |
@@ -225,7 +233,7 @@ Invoke-RestMethod https://<公网域名>/health
 | `GET` | `/v1/evolution/status` | 查询模型与评测门禁就绪状态 |
 | `GET` | `/v1/evolution/runs` | 查询持久化的新旧版本评测记录 |
 | `POST` | `/v1/skills/{name}/versions/{version}/activate` | 激活或回滚版本 |
-| `POST` | `/v1/skill-evolution/auto` | 从确认反馈生成、回放并门禁 Skill 候选 |
+| `POST` | `/v1/skill-evolution/auto` | 仅从归属于 `skill_name` 的确认反馈生成、回放并门禁 Skill 候选 |
 | `POST` | `/v1/skill-evolution/propose` | 评测指定 Agent Skill `SKILL.md` artifact |
 | `GET` | `/v1/skill-evolution/status?skill_name={name}` | 查询 Skill 门禁与激活版本 |
 | `GET` | `/v1/skill-evolution/runs` | 查询 Skill 进化运行与指标 |
@@ -296,4 +304,3 @@ Finding gate 校验格式、证据、置信度和发布条件
 
 因此，把 Skill 内容直接硬编码到全局上下文并不能完全等价：那会让每个任务都携带全部领域规则，增加上下文长度和相互干扰；Skill 机制可以按任务选择、限制工具权限、热加载版本，并通过 `/v1/skill-evolution/*` 做候选评测、门禁和回滚。对于只有一两句、没有独立选择价值的规则，直接放在全局 prompt 更合适；只有当一组规则有清晰边界、需要按场景启用或需要独立演进时，才应该做成 Skill。
 
-本仓库的内置 Skill 已按上述结构补充了完整的 Mission、Review procedure、Checklist、Evidence/severity、Remediation/verification 和 Output contract。新增 Skill 时可复制其中一个目录，再根据领域替换这些章节，并用 `POST /v1/skills/reload` 让新任务加载最新版本。

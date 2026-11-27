@@ -1,3 +1,5 @@
+# Lead 与 Worker 协作测试：覆盖分派、返工、终审、检查点恢复及决策归档。
+
 import json
 import os
 import tempfile
@@ -12,14 +14,17 @@ from evoagent.store import TaskStore
 DIFF = "--- a/app.py\n+++ b/app.py\n@@ -1 +1 @@\n-old\n+eval(user_input)\n"
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class HierarchicalClient:
     provider = "fake"
     model = "fake-model"
 
+    # 保存构造参数并初始化实例状态；核心成员为 calls、security_calls。
     def __init__(self):
         self.calls = []
         self.security_calls = 0
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         managed = json.loads(user)
         task = json.loads(managed["task"])
@@ -71,7 +76,7 @@ class HierarchicalClient:
             if self.security_calls == 1:
                 return {"action": "final", "findings": []}
             return {"action": "final", "findings": [{
-                "rule_id": "SEC-LEAD-REVISION", "severity": "medium",
+                "rule_id": "SEC-EVAL", "severity": "medium",
                 "title": "Dynamic execution", "explanation": "Input is executed as code.",
                 "path": "app.py", "line": 1, "evidence": "eval(user_input)",
                 "fix": "Use a constrained parser.",
@@ -92,7 +97,9 @@ class HierarchicalClient:
         raise AssertionError((role, task))
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class LeadWorkerCollaborationTests(unittest.TestCase):
+    # 为每个测试创建独立夹具和临时资源，避免前一个用例的状态影响当前断言。
     def setUp(self):
         handle, self.path = tempfile.mkstemp(suffix=".db")
         os.close(handle)
@@ -104,9 +111,11 @@ class LeadWorkerCollaborationTests(unittest.TestCase):
             ],
         })
 
+    # 释放本用例创建的资源并清理临时数据，保持测试之间互不干扰。
     def tearDown(self):
         os.unlink(self.path)
 
+    # 验证 Lead 分派任务、请求高风险返工并综合 Worker 结果。
     def test_lead_delegates_requests_revision_and_synthesizes(self):
         client = HierarchicalClient()
         reviewer = AgenticReviewer(self.store, client)
@@ -116,7 +125,9 @@ class LeadWorkerCollaborationTests(unittest.TestCase):
         )
         summary = reviewer.collaboration_summary("task")
 
-        self.assertIn("SEC-LEAD-REVISION", {item.rule_id for item in findings})
+        self.assertIn("SEC-EVAL", {item.rule_id for item in findings})
+        merged = next(item for item in findings if item.rule_id == "SEC-EVAL")
+        self.assertEqual(["local-rule-scanner", "security"], merged.sources)
         self.assertEqual("lead-workers", summary["collaboration"]["protocol"])
         self.assertEqual(2, client.security_calls)
         self.assertEqual(1, len(summary["collaboration"]["revision_results"]))
@@ -129,6 +140,10 @@ class LeadWorkerCollaborationTests(unittest.TestCase):
             1, client.calls.count(("lead", "assess-workers"))
         )
         self.assertEqual(7, summary["execution"]["llm_calls"])
+        critic_component = next(
+            item for item in summary["components"] if item["name"] == "critic"
+        )
+        self.assertIn("read_file", critic_component["tool_permissions"])
         session_events = {
             item["event"]
             for item in summary["execution"]["agent_traces"]["lead-session"]
@@ -141,6 +156,7 @@ class LeadWorkerCollaborationTests(unittest.TestCase):
         self.assertEqual("completed", checkpoint["status"])
         self.assertEqual("completed", checkpoint["state"]["session"]["phase"])
 
+    # 验证恢复完成会话时不会重复消耗模型调用。
     def test_completed_session_resumes_without_repeating_agent_calls(self):
         first = HierarchicalClient()
         AgenticReviewer(self.store, first).review_with_context(
@@ -153,19 +169,20 @@ class LeadWorkerCollaborationTests(unittest.TestCase):
             "task", DIFF, parse_unified_diff(DIFF), "org/repo"
         )
 
-        self.assertIn("SEC-LEAD-REVISION", {item.rule_id for item in findings})
+        self.assertIn("SEC-EVAL", {item.rule_id for item in findings})
         self.assertEqual([], resumed_client.calls)
         self.assertGreater(
             resumed.collaboration_summary("task")["execution"]["llm_calls"], 0
         )
 
+    # 验证门禁接受与拒绝决策被归档，后续审查能够检索。
     def test_gate_decisions_are_archived_for_future_agent_recall(self):
         memory = MemoryManager(self.store)
         reviewer = AgenticReviewer(self.store, HierarchicalClient(), memory_manager=memory)
 
         reviewer.review_with_context("task", DIFF, parse_unified_diff(DIFF), "org/repo")
 
-        episodes = memory.recall("default", "org/repo", "SEC-LEAD-REVISION")
+        episodes = memory.recall("default", "org/repo", "SEC-EVAL")
         self.assertTrue(any(item["kind"] == "finding_approved" for item in episodes))
         self.assertTrue(any(item["kind"] == "task_summary" for item in episodes))
 

@@ -1,3 +1,5 @@
+# 配置加载测试：覆盖 .env 格式解析及进程环境变量的优先级。
+
 import os
 import tempfile
 import unittest
@@ -6,7 +8,9 @@ from unittest.mock import patch
 from evoagent.config import load_dotenv
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class DotenvTests(unittest.TestCase):
+    # 验证 .env 可读取合法赋值及带引号的值。
     def test_loads_valid_assignments_and_quoted_values(self):
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             handle.write("# comment\n")
@@ -22,6 +26,7 @@ class DotenvTests(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    # 验证 .env 不覆盖进程中已经设置的环境变量。
     def test_process_environment_has_priority(self):
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
             handle.write("EVOAGENT_LLM_PROVIDER=deepseek\n")

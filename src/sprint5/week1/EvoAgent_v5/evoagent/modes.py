@@ -1,3 +1,5 @@
+# 运行模式与组件分类：解析 agentic 模式，并向报告暴露 Agent、工具和门禁的职责分类。
+
 """Agentic execution mode and product component taxonomy."""
 from dataclasses import dataclass
 from enum import Enum
@@ -6,9 +8,11 @@ from typing import Any, Dict, Iterable, Optional
 from .models import ComponentKind
 
 
+# 当前支持的审查运行模式。
 class RunMode(str, Enum):
     AGENTIC = "agentic"
 
+    # 解析并验证运行模式，拒绝不支持的模式值。
     @classmethod
     def parse(cls, value: Optional[str], default: "RunMode" = None) -> "RunMode":
         fallback = default or cls.AGENTIC
@@ -20,6 +24,7 @@ class RunMode(str, Enum):
             raise ValueError("mode must be agentic") from exc
 
 
+# 记录请求模式、实际模式及解析说明。
 @dataclass(frozen=True)
 class ModeResolution:
     requested: RunMode
@@ -27,6 +32,7 @@ class ModeResolution:
     model_configured: bool
     fallback_reason: str = ""
 
+    # 将内部对象转换为可 JSON 序列化的字典，枚举使用其对外字符串值。
     def to_dict(self) -> Dict[str, Any]:
         return {
             "requested": self.requested.value,
@@ -36,16 +42,19 @@ class ModeResolution:
         }
 
 
+# 生成运行模式解析结果，说明请求模式和实际采用模式。
 def resolve_mode(requested: Optional[str], model_configured: bool) -> ModeResolution:
     selected = RunMode.parse(requested, RunMode.AGENTIC)
     unavailable = "" if model_configured else "Agentic review requires a configured model."
     return ModeResolution(selected, selected, model_configured, unavailable)
 
 
+# 构造组件分类记录，让报告区分 Agent、工具扫描器和门禁。
 def component(kind: ComponentKind, name: str, enabled: bool = True, **detail) -> dict:
     return {"kind": kind.value, "name": name, "enabled": bool(enabled), **detail}
 
 
+# 返回对外组件分类说明，供 API 和控制台展示。
 def public_taxonomy() -> Dict[str, Any]:
     return {
         "component_kinds": {

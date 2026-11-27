@@ -1,3 +1,5 @@
+# Agent Skill 演进：验证 SKILL.md 制品，回放基线和候选，按租户保存版本、激活或回滚。
+
 """Replay-gated evolution of standard Agent Skill ``SKILL.md`` packages."""
 import hashlib
 import json
@@ -7,7 +9,7 @@ import uuid
 from typing import Any, Callable, Dict, Optional
 
 from .diff_parser import parse_unified_diff
-from .evolution import RegressionEvaluator
+from .evolution import EvolutionEngine, RegressionEvaluator
 from .reviewer import Reviewer
 from .skills import AgentSkill, SKILL_NAME
 from .store import utc_now
@@ -17,14 +19,17 @@ ARTIFACT_SCHEMA_VERSION = 2
 RULE_ID = re.compile(r"[A-Z][A-Z0-9_-]{1,79}")
 
 
+# 按稳定的键顺序生成紧凑 JSON，供内容比较和指纹计算使用。
 def _canonical_json(value: dict) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+# 计算内容的 SHA-256 指纹，用于识别相同输入和追踪版本。
 def _sha256(value: dict) -> str:
     return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
 
 
+# 生成具备标准 frontmatter 的初始 Skill 文本，作为演进基线。
 def _default_skill_markdown(name: str) -> str:
     return """---
 name: %s
@@ -37,6 +42,7 @@ Inspect the current change using repository evidence. Report only actionable def
 """ % name
 
 
+# 将旧版规则制品转换为标准 SKILL.md 包，保留兼容读取能力。
 def _migrate_legacy_artifact(artifact: dict, expected_name: str) -> dict:
     name = str(artifact.get("name", expected_name)).strip().lower()
     description = str(artifact.get("description") or (
@@ -65,6 +71,7 @@ def _migrate_legacy_artifact(artifact: dict, expected_name: str) -> dict:
     return {"name": name, "files": {"SKILL.md": "\n".join(lines).strip() + "\n"}}
 
 
+# 检查 Skill 制品结构与名称，规范化 SKILL.md 和资源并计算内容指纹。
 def validate_artifact(artifact: Any, expected_name: str = "") -> dict:
     """Validate and canonicalize one versioned Agent Skill package."""
     expected_name = str(expected_name).strip().lower()
@@ -95,10 +102,13 @@ def validate_artifact(artifact: Any, expected_name: str = "") -> dict:
     return normalized
 
 
+# Skill 回放的最小任务存储适配器。
 class _ReplayTaskStore:
+    # 保存回放任务所需的最小输入，供候选 Skill 审查时读取。
     def __init__(self, skill_name: str):
         self.skill_name = skill_name
 
+    # 提供当前 Skill 回放任务的输入配置，适配产品审查器的存储接口。
     def get(self, _task_id: str, _tenant_id: Optional[str] = None) -> dict:
         return {"input": {
             "mode": "agentic",
@@ -107,9 +117,11 @@ class _ReplayTaskStore:
         }}
 
 
+# 将候选 Skill 注入真实 Agent 协作流程进行回放。
 class AgentSkillReplayReviewer(Reviewer):
     """Replay a candidate through the product Lead/worker Skill runtime."""
 
+    # 校验候选制品并构造使用该 Skill 的 Agent 审查链路与预算。
     def __init__(self, artifact: dict, client, token_budget: int = 8000, time_budget_seconds: int = 60):
         from .agentic_core import AgenticReviewer
 
@@ -126,9 +138,11 @@ class AgentSkillReplayReviewer(Reviewer):
             skill_provider=lambda _tenant: [self.skill],
         )
 
+    # 为制品回放构造默认案例上下文，再进入完整 Agent 协作审查。
     def review(self, diff: str, parsed) -> list:
         return self.review_case({"diff": diff, "repository": ""}, parsed)
 
+    # 接收完整案例上下文后执行审查，供评测器记录仓库和任务元信息。
     def review_case(self, case: dict, parsed) -> list:
         self._sequence += 1
         self._last_task_id = "skill-replay:%s:%d" % (self.skill.name, self._sequence)
@@ -137,16 +151,19 @@ class AgentSkillReplayReviewer(Reviewer):
             repository=str(case.get("repository_root") or case.get("repository") or ""),
         )
 
+    # 返回最近一次评测调用的执行账本，供成本和调用次数统计。
     def evaluation_execution(self) -> dict:
         return dict(
             self.agentic.collaboration_summary(self._last_task_id).get("execution") or {}
         )
 
+    # 返回最近一次审查的协作摘要，供实验验证实际角色拓扑。
     def evaluation_collaboration(self) -> dict:
         return dict(
             self.agentic.collaboration_summary(self._last_task_id).get("collaboration") or {}
         )
 
+    # 导出当前评测组的配置，便于核对和复现实验。
     def evaluation_config(self) -> dict:
         return {
             "mode": "agentic", "roles": [
@@ -158,9 +175,11 @@ class AgentSkillReplayReviewer(Reviewer):
         }
 
 
+# 按租户管理 Skill 制品候选、回放门禁和版本切换。
 class SkillEvolutionEngine:
     """Create, replay, activate and roll back Agent Skill package versions."""
 
+    # 保存租户制品存储、回放工厂和门禁参数，用锁串行化候选版本变更。
     def __init__(
         self, store, reviewer_factory: Optional[Callable[[dict], Reviewer]] = None,
         min_cases: int = 3, max_cases: int = 100, min_improvement: float = .01,
@@ -175,10 +194,12 @@ class SkillEvolutionEngine:
         self.max_metric_regression = max_metric_regression
         self._lock = threading.RLock()
 
+    # 创建指定 Skill 的初始制品，用于尚无活动版本时的基线比较。
     @staticmethod
     def empty_artifact(skill_name: str) -> dict:
         return validate_artifact(_default_skill_markdown(skill_name), skill_name)
 
+    # 在已有 Skill 内容上构造候选制品，并通过统一验证后返回。
     @classmethod
     def build_candidate_artifact(
         cls, skill_name: str, base_artifact: dict, feedback: list,
@@ -227,15 +248,18 @@ class SkillEvolutionEngine:
             "used_feedback_ids": used,
         }
 
+    # 从序列化的制品创建回放审查器，适配通用回归评测接口。
     def _factory(self, serialized: str) -> Reviewer:
         if self.reviewer_factory is None:
             raise RuntimeError("Agent Skill replay requires a configured model")
         return self.reviewer_factory(json.loads(serialized))
 
+    # 裁剪保留集的公开结果，避免暴露逐案例明细。
     @staticmethod
     def _redact_holdout(metrics: dict) -> dict:
         return {key: value for key, value in metrics.items() if key not in {"case_results", "errors"}}
 
+    # 逐项比较候选与基线的受保护指标，允许配置范围内的浮动。
     def metrics_non_regressing(self, candidate: dict, baseline: dict) -> bool:
         protected = ["score", "precision", "recall", "high_severity_recall", "success_rate"]
         if baseline.get("positive_cases", 0):
@@ -247,9 +271,11 @@ class SkillEvolutionEngine:
             >= float(baseline.get(key, 0)) for key in protected
         )
 
+    # 逐项检查受保护指标，判断候选的退步是否超过允许范围。
     def _non_regressing(self, candidate: dict, baseline: dict) -> bool:
         return self.metrics_non_regressing(candidate, baseline)
 
+    # 返回当前 Skill 演进配置、样本就绪状态和活动版本信息。
     def status(self, skill_name: str = "evolved-review", tenant_id: str = "default") -> dict:
         validation = self.store.list_evaluation_cases("validation", True, self.max_cases)
         holdout = self.store.list_evaluation_cases("holdout", True, self.max_cases)
@@ -268,18 +294,21 @@ class SkillEvolutionEngine:
             and len(validation) >= self.min_cases and len(holdout) >= self.min_holdout_cases,
         }
 
-    def propose(self, skill_name: str, artifact: Any, tenant_id: str = "default") -> dict:
+    # 规范化 Skill 名称并校验制品，在锁内完成候选评测和保存。
+    def propose(self, skill_name: str, artifact: Any, tenant_id: str = "default", *, manual=False, feedback_ids=()) -> dict:
         skill_name = skill_name.strip().lower()
         candidate = validate_artifact(artifact, skill_name)
         with self._lock:
-            return self._propose(skill_name, candidate, tenant_id)
+            return self._propose(skill_name, candidate, tenant_id, manual, feedback_ids)
 
-    def _propose(self, skill_name: str, artifact: dict, tenant_id: str) -> dict:
+    # 在相同验证集与保留集回放基线和候选，满足改进及非退步条件才激活。
+    def _propose(self, skill_name: str, artifact: dict, tenant_id: str, manual=False, feedback_ids=()) -> dict:
         active = self.store.get_active_skill_artifact(skill_name, tenant_id)
         baseline_artifact = (
             validate_artifact(active["artifact"], skill_name)
             if active else self.empty_artifact(skill_name)
         )
+        # 内容未变时直接延后，不制造重复版本，也不额外消耗模型回放。
         if active and _sha256(baseline_artifact) == _sha256(artifact):
             return {
                 "version": self._public_version(active), "decision": "deferred",
@@ -327,7 +356,7 @@ class SkillEvolutionEngine:
                 "holdout_non_regression": holdout_safe,
             })
             if no_errors and improved and validation_safe and holdout_safe:
-                decision = "activated"
+                decision = "ready" if manual else "activated"
                 reason = "candidate SKILL.md improved validation and passed holdout non-regression"
             else:
                 decision = "rejected"
@@ -357,9 +386,12 @@ class SkillEvolutionEngine:
                 "candidate_holdout": self._redact_holdout(candidate_holdout),
                 "baseline_holdout": self._redact_holdout(baseline_holdout),
                 "gates": gates, "reason": reason, "candidate_change": candidate_change,
+                "feedback_ids": list(feedback_ids),
                 "reproducibility": {
                     "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
                     "candidate_artifact_sha256": version["artifact_sha256"],
+                    "validation_dataset_sha256": EvolutionEngine._dataset_fingerprint(validation),
+                    "holdout_dataset_sha256": EvolutionEngine._dataset_fingerprint(holdout),
                     "baseline_artifact_sha256": active.get("artifact_sha256")
                     if active else _sha256(baseline_artifact),
                 },
@@ -374,13 +406,17 @@ class SkillEvolutionEngine:
             "gates": gates, "run_id": run["id"], "candidate_change": candidate_change,
         }
 
+    # 将确认漏报写入 Skill 指导块，移除误报对应块；候选激活后再解决已用反馈。
     def auto_propose(
         self, skill_name: str = "evolved-review", tenant_id: Optional[str] = None,
+        *, manual=False,
     ) -> dict:
         skill_name = skill_name.strip().lower()
         if not SKILL_NAME.fullmatch(skill_name):
             raise ValueError("invalid Agent Skill name")
-        failures = self.store.list_failure_cases(True, 100, tenant_id)
+        failures = self.store.list_failure_cases(
+            True, 100, tenant_id, skill_name=skill_name,
+        )
         tenant_id = tenant_id or "default"
         active = self.store.get_active_skill_artifact(skill_name, tenant_id)
         artifact = (
@@ -396,9 +432,20 @@ class SkillEvolutionEngine:
                 continue
             if case.get("category") == "false_positive":
                 updated = self._remove_learned_block(content, rule_id)
+                marker = f"<!-- evoagent:false-positive:{rule_id} -->"
+                if manual and updated == content and marker not in content:
+                    updated = (content.rstrip() + f"\n\n{marker}\nFor `{rule_id}`, confirm the failing preconditions and "
+                               "check whether repository controls already prevent the claimed impact before reporting.\n")
                 if updated != content:
                     content = updated
                     removed.append(rule_id)
+                    used_ids.append(case["id"])
+                continue
+            if manual and case.get("category") == "bad_fix":
+                marker = f"<!-- evoagent:bad-fix:{rule_id} -->"
+                if marker not in content:
+                    content = (content.rstrip() + f"\n\n{marker}\nFor `{rule_id}`, preserve existing valid behavior "
+                               "in the proposed fix and specify a regression test for the affected boundary.\n")
                     used_ids.append(case["id"])
                 continue
             if case.get("category") != "missed_issue":
@@ -424,16 +471,18 @@ class SkillEvolutionEngine:
             "name": skill_name,
             "files": {**artifact["files"], "SKILL.md": content},
         }, skill_name)
-        result = self.propose(skill_name, candidate, tenant_id)
+        result = self.propose(skill_name, candidate, tenant_id, manual=manual, feedback_ids=used_ids)
         result.update({
             "failure_cases_used": len(used_ids),
             "learned_rule_ids": sorted(set(learned)),
             "removed_rule_ids": sorted(set(removed)),
         })
+        # 只有候选真正激活后才解决相关反馈；被拒或延后的候选仍保留学习信号。
         if result["decision"] == "activated":
             self.store.resolve_failure_cases(used_ids)
         return result
 
+    # 把确认的问题类型与短证据生成带规则标记的 Skill 指导块。
     @staticmethod
     def _learned_block(rule_id: str, finding: dict, evidence: str) -> str:
         evidence = evidence.replace("`", "'")
@@ -448,6 +497,7 @@ class SkillEvolutionEngine:
             "<!-- evoagent:learned:%s:end -->" % rule_id, "",
         ])
 
+    # 按规则标记移除误报反馈对应的已学习段落。
     @staticmethod
     def _remove_learned_block(content: str, rule_id: str) -> str:
         pattern = re.compile(
@@ -457,6 +507,7 @@ class SkillEvolutionEngine:
         )
         return pattern.sub("\n", content).rstrip() + "\n"
 
+    # 从原任务的 Diff 或报告中查找反馈位置对应的代码证据。
     def _evidence_from_task(self, task_id: str, finding: dict) -> str:
         diff = self.store.get_task_payload(task_id)
         if not diff:
@@ -470,9 +521,11 @@ class SkillEvolutionEngine:
             return ""
         return ""
 
+    # 将指定租户的 Skill 恢复到已有版本。
     def rollback(self, skill_name: str, version: int, tenant_id: str = "default") -> bool:
         return self.store.activate_skill_artifact(skill_name, version, tenant_id)
 
+    # 生成基线与候选 SKILL.md 的文本差异，供人工检查演进内容。
     @staticmethod
     def _skill_diff(baseline: dict, candidate: dict) -> dict:
         before, after = baseline.get("files") or {}, candidate.get("files") or {}
@@ -487,6 +540,7 @@ class SkillEvolutionEngine:
             ).hexdigest(),
         }
 
+    # 在尚未回放或回放不可用时返回统一的空指标结构。
     @staticmethod
     def _empty_metrics(cases: int) -> Dict[str, Any]:
         return {
@@ -499,6 +553,7 @@ class SkillEvolutionEngine:
             "case_results": [],
         }
 
+    # 提取版本公开信息，避免在每个状态响应中重复返回完整制品。
     @staticmethod
     def _public_version(value: dict) -> dict:
         return {

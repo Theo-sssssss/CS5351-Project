@@ -1,3 +1,6 @@
+# 上下文预算管理：按风险和关注文件压缩 Diff，并压缩历史工具观察以预留模型输出空间。
+# 压缩采用确定性规则，完整 Diff 仍保留在本地；历史记忆与工具输出按不可信上下文处理。
+
 """Token-aware semantic context compression for review agents.
 
 The compressor is deliberately deterministic.  It keeps the complete diff local,
@@ -39,6 +42,7 @@ RISK_SIGNALS: Tuple[Tuple[str, int, Tuple[str, ...]], ...] = (
 )
 
 
+# 根据 ASCII 与非 ASCII 字符数估算 Token，用于调用前预算检查，并非精确分词。
 def estimate_tokens(value: Any) -> int:
     """Conservative dependency-free token estimate suitable for preflight limits."""
     if not isinstance(value, str):
@@ -52,6 +56,7 @@ def estimate_tokens(value: Any) -> int:
     return max(1, math.ceil(ascii_chars / 3.2 + non_ascii + 4))
 
 
+# 限制文本长度；空间足够时保留首尾内容并标记中间省略部分。
 def _clip(value: str, limit: int) -> str:
     value = str(value)
     if len(value) <= limit:
@@ -63,6 +68,7 @@ def _clip(value: str, limit: int) -> str:
     return value[:left] + "\n...<omitted>...\n" + value[-right:]
 
 
+# 一个原始变更块及其文件路径、新旧起始行号。
 @dataclass(frozen=True)
 class DiffHunk:
     index: int
@@ -72,22 +78,27 @@ class DiffHunk:
     old_start: int
     new_start: int
 
+    # 将块头和块内各行拼成完整 Diff 片段。
     @property
     def content(self) -> str:
         return "\n".join((self.header, *self.lines))
 
+    # 统计块内新增行，排除文件头的 +++ 标记。
     @property
     def added(self) -> int:
         return sum(line.startswith("+") and not line.startswith("+++") for line in self.lines)
 
+    # 统计块内删除行，排除文件头的 --- 标记。
     @property
     def deleted(self) -> int:
         return sum(line.startswith("-") and not line.startswith("---") for line in self.lines)
 
 
+# 负责模型输入压缩，并记录每个任务的预算使用与召回情况。
 class ContextManager:
     """Build bounded semantic views while retaining auditable compression facts."""
 
+    # 将输入、Diff 和观察预算限制在窗口范围内，并初始化任务统计与锁。
     def __init__(
         self, context_window_tokens: int = 32768, input_token_budget: int = 20000,
         diff_token_budget: int = 12000, observation_token_budget: int = 4000,
@@ -105,11 +116,13 @@ class ContextManager:
         self._memory: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
 
+    # 清空指定任务的压缩记录和召回统计，为一次审查建立上下文账目。
     def begin(self, context_key: str) -> None:
         with self._lock:
             self._events[context_key] = []
             self._memory[context_key] = {"recalled": 0, "scopes": {}, "query_sha256": ""}
 
+    # 恢复检查点中的压缩事件和召回摘要，避免覆盖当前调用已记录的数据。
     def restore(self, context_key: str, summary: Optional[Dict[str, Any]]) -> None:
         if not summary:
             return
@@ -123,6 +136,7 @@ class ContextManager:
             if isinstance(memory, dict) and not self._memory.get(context_key, {}).get("recalled"):
                 self._memory[context_key] = dict(memory)
 
+    # 记录召回数量、记忆类型及查询指纹，便于解释上下文来源。
     def record_memory_recall(
         self, context_key: str, query: str, memories: Sequence[Dict[str, Any]],
     ) -> None:
@@ -136,6 +150,7 @@ class ContextManager:
                 "query_sha256": hashlib.sha256(query.encode("utf-8")).hexdigest(),
             }
 
+    # 从变更路径、风险信号和新增标识符中构造有长度上限的记忆查询。
     @staticmethod
     def memory_query(diff: str, files: Iterable[str]) -> str:
         lowered = diff.lower()
@@ -150,6 +165,7 @@ class ContextManager:
         values = list(files)[:100] + signals + identifiers[:80]
         return " ".join(dict.fromkeys(str(value).lower() for value in values if value))[:4000]
 
+    # 裁剪召回记忆并标明其只是历史线索，要求用当前 Diff 或工具核实。
     @staticmethod
     def format_memories(memories: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         return {
@@ -168,6 +184,7 @@ class ContextManager:
             ],
         }
 
+    # 解析每个变更块，按风险与关注范围排序，在预算内保留正文并概括省略部分。
     def compress_diff(
         self, diff: str, context_key: str = "", label: str = "review",
         focus_files: Sequence[str] = (), risk_domains: Sequence[str] = (),
@@ -195,6 +212,7 @@ class ContextManager:
         }
         # Reserve room for metadata and omitted summaries.  Focused/risky hunks
         # receive full text; oversized hunks become risk-centred excerpts.
+        # 正文只占预算的一部分，剩余空间留给路径、风险摘要和省略块信息。
         content_budget = max(128, int(budget * 0.68))
         used = 0
         selected_indices = set()
@@ -238,6 +256,7 @@ class ContextManager:
                 self._events.setdefault(context_key, []).append(event)
         return base
 
+    # 把结构化压缩结果还原为字符串视图，兼容原先接收 Diff 文本的调用方。
     @staticmethod
     def render_diff_view(payload: Dict[str, Any]) -> str:
         """Render a compressed payload while preserving the historical string contract."""
@@ -262,6 +281,7 @@ class ContextManager:
             )
         return "\n".join(lines).strip() + "\n"
 
+    # 提取不含正文的压缩元数据，避免在模型上下文中重复传输内容。
     @staticmethod
     def diff_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
         """Return content-free metadata that is cheap to include beside the string view."""
@@ -273,12 +293,15 @@ class ContextManager:
             )
         }
 
+    # 为系统提示和模型输出预留空间，组合任务、工具目录与压缩后的观察记录。
     def build_managed_context(
         self, task: str, tools: Sequence[Dict[str, Any]], observations: Sequence[Dict[str, Any]],
         remaining_token_budget: int, remaining_time_seconds: int, system_prompt: str = "",
         max_output_tokens: int = 4000,
+        preserve_diff: bool = False,
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         system_tokens = estimate_tokens(system_prompt)
+        # 先扣除系统提示、预期输出与缓冲量，再确定可发送的输入上限。
         hard_input_limit = max(
             512,
             min(
@@ -306,14 +329,14 @@ class ContextManager:
             },
         }
         original_tokens = estimate_tokens(managed)
-        if original_tokens > hard_input_limit:
+        if original_tokens > hard_input_limit and not preserve_diff:
             managed["task"] = self._compact_task(task, max(256, hard_input_limit - tools_tokens - observation_budget - 256))
         # A final defensive reduction handles unexpectedly large tool schemas or
         # task metadata while preserving JSON structure and list indices.
         while estimate_tokens(managed) > hard_input_limit and managed["observations"]:
             managed["observations"].pop(0)
             observation_stats["dropped"] += 1
-        if estimate_tokens(managed) > hard_input_limit:
+        if estimate_tokens(managed) > hard_input_limit and not preserve_diff:
             managed["task"] = self._minimal_task(
                 managed["task"], max(192, hard_input_limit - tools_tokens - 320)
             )
@@ -327,11 +350,13 @@ class ContextManager:
         }
         return managed, stats
 
+    # 按上下文窗口计算输出上限，保留至少一部分空间给输入。
     def output_token_limit(self, system_prompt: str, requested: int) -> int:
         """Reserve enough of the configured window for a minimally useful input."""
         capacity = self.context_window_tokens - estimate_tokens(system_prompt) - 1024
         return max(128, min(int(requested), max(128, capacity)))
 
+    # 优先概括较早的观察，保留近期结果；仍超预算时再移除最旧条目。
     def compact_observations(
         self, observations: Sequence[Dict[str, Any]], max_tokens: Optional[int] = None,
     ) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
@@ -339,6 +364,7 @@ class ContextManager:
         values = [dict(item) for item in observations]
         if estimate_tokens(values) <= budget:
             return values, {"total": len(values), "summarized": 0, "dropped": 0}
+        # 滑动窗口内尽量保留近期观察，较早记录先压缩成语义摘要。
         split = max(0, len(values) - self.recent_observations)
         compact = [self._summarize_observation(item) for item in values[:split]]
         compact.extend(self._bound_observation(item) for item in values[split:])
@@ -362,6 +388,7 @@ class ContextManager:
             })
         return compact, {"total": len(values), "summarized": min(len(values), summarized), "dropped": dropped}
 
+    # 在锁内获取当前任务的压缩记录，计算整体压缩比例和记忆召回统计。
     def summary(self, context_key: str) -> Dict[str, Any]:
         with self._lock:
             events = [dict(item) for item in self._events.get(context_key, [])]
@@ -379,6 +406,7 @@ class ContextManager:
             "compressions": events,
         }
 
+    # 按文件头和块头拆分 Diff，保留新旧起始行号与原始块内容。
     @staticmethod
     def _parse_hunks(diff: str) -> List[DiffHunk]:
         hunks: List[DiffHunk] = []
@@ -387,6 +415,7 @@ class ContextManager:
         lines: List[str] = []
         old_start = new_start = 0
 
+        # 把当前积累的块写入结果，再清空缓冲区，避免跨文件或跨块混合。
         def flush() -> None:
             if header:
                 hunks.append(DiffHunk(
@@ -416,6 +445,7 @@ class ContextManager:
             hunks.append(DiffHunk(0, path or "unknown", "@@ unparsed diff @@", tuple(diff.splitlines()), 0, 0))
         return hunks
 
+    # 抽取块内符号和风险信号，并计算关注文件与领域对排序的影响。
     def _map_hunk(self, hunk: DiffHunk, focus: set, domains: set) -> Dict[str, Any]:
         lowered = hunk.content.lower()
         signals = []
@@ -451,6 +481,7 @@ class ContextManager:
             "changed_samples": samples,
         }
 
+    # 按 Token 预算把块摘要分组，控制一次归并处理的数据规模。
     def _chunk_maps(self, mapped: Sequence[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
         chunks: List[List[Dict[str, Any]]] = []
         current: List[Dict[str, Any]] = []
@@ -466,11 +497,13 @@ class ContextManager:
             chunks.append(current)
         return chunks
 
+    # 归并各组块摘要并按风险排序，确定正文保留的优先级。
     @staticmethod
     def _reduce_maps(chunks: Sequence[Sequence[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         values = [dict(item) for chunk in chunks for item in chunk]
         return sorted(values, key=lambda item: (-item["risk_score"], item["path"], item["index"]))
 
+    # 提取可公开的块摘要，去掉内部处理所需的字段。
     @staticmethod
     def _public_map(item: Dict[str, Any]) -> Dict[str, Any]:
         return {key: item[key] for key in (
@@ -478,6 +511,7 @@ class ContextManager:
             "symbols", "added", "deleted", "changed_samples",
         )}
 
+    # 汇总变更块的文件、符号及风险信号，保留被省略代码的整体线索。
     @staticmethod
     def _aggregate_maps(mapped: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         signals: Dict[str, int] = {}
@@ -491,6 +525,7 @@ class ContextManager:
             "risk_signal_counts": signals,
         }
 
+    # 围绕风险相关行提取片段，在有限预算内保留最有用的上下文。
     def _semantic_excerpt(self, hunk: DiffHunk, budget: int, domains: set) -> str:
         if estimate_tokens(hunk.content) <= budget:
             return hunk.content
@@ -511,6 +546,7 @@ class ContextManager:
         omitted = max(0, len(hunk.lines) - len(selected))
         return "\n".join((hunk.header, *selected, "... %d hunk line(s) semantically omitted ..." % omitted))
 
+    # 逐步缩减正文和摘要，使压缩后的结构化 Diff 尽量符合预算。
     @staticmethod
     def _fit_diff_payload(payload: Dict[str, Any], budget: int) -> None:
         summaries = payload["omitted_hunk_summaries"]
@@ -548,6 +584,7 @@ class ContextManager:
             0, payload["compression"]["total_hunks"] - len(payload["selected_hunks"])
         )
 
+    # 把工具返回转换为短摘要，同时保留工具身份、执行状态和证据引用。
     @staticmethod
     def _summarize_observation(
         item: Dict[str, Any], content_limit: int = 600,
@@ -576,6 +613,7 @@ class ContextManager:
             "compacted": True,
         }
 
+    # 用受限深度和长度概括嵌套数据，防止大对象挤占上下文。
     @staticmethod
     def _shape(value: Any) -> Any:
         if isinstance(value, list):
@@ -586,6 +624,7 @@ class ContextManager:
             return _clip(value, 240)
         return value
 
+    # 限制近期观察的内容规模，保留其结构与必要字段。
     @staticmethod
     def _bound_observation(item: Dict[str, Any]) -> Dict[str, Any]:
         value = dict(item)
@@ -594,6 +633,7 @@ class ContextManager:
             return ContextManager._summarize_observation(value, content_limit=900)
         return value
 
+    # 按字段压缩任务上下文，尽量保留候选索引和关键审查信息。
     @staticmethod
     def _compact_task(task: str, budget: int) -> str:
         if estimate_tokens(task) <= budget:
@@ -603,6 +643,7 @@ class ContextManager:
         except (TypeError, ValueError, json.JSONDecodeError):
             return _clip(task, max(256, budget * 2))
 
+        # 递归裁剪任务中的嵌套内容，控制深度与条目大小以保留 JSON 结构。
         def reduce(item: Any, depth: int = 0) -> Any:
             if isinstance(item, dict):
                 result = {}
@@ -626,6 +667,7 @@ class ContextManager:
         # Repeatedly shrink prose without removing candidate entries.
         limit = 180
         while estimate_tokens(rendered) > budget and limit >= 40:
+            # 缩短一个任务字段并同步更新结构化内容，逐步降低 Token 占用。
             def shrink(item: Any) -> Any:
                 if isinstance(item, dict):
                     return {key: shrink(child) for key, child in item.items()}
@@ -636,6 +678,7 @@ class ContextManager:
             limit //= 2
         return rendered
 
+    # 生成更小的任务视图，供常规压缩后仍超预算的情况使用。
     @staticmethod
     def _minimal_task(task: str, budget: int) -> str:
         """Produce a valid, structurally useful JSON task under severe pressure."""
@@ -653,6 +696,7 @@ class ContextManager:
             "assignment_id", "run_id", "worker", "revision_round",
         }
 
+        # 保留条目中的关键标识并限制描述长度，减少最小视图的体积。
         def compact_item(item: Any, depth: int = 0) -> Any:
             if isinstance(item, dict):
                 result = {}

@@ -1,3 +1,5 @@
+# 真实 PR 数据导入脚本：从带标签的输入清单拉取 Diff，校验并输出评测 JSONL。
+
 """Import labelled public GitHub PR diffs into the Evaluation Harness JSONL format.
 
 The manifest must contain repository, pull_request, split, expected_findings and
@@ -21,6 +23,7 @@ from evoagent.evaluation_harness import validate_case  # noqa: E402
 from evoagent.evaluation_v2 import validate_real_dataset  # noqa: E402
 
 
+# 下载 PR 的统一 Diff 文本，供解析器与审查器使用。
 def fetch_diff(repository, pull_request, token=""):
     url = "https://api.github.com/repos/%s/pulls/%d" % (repository, pull_request)
     headers = {
@@ -41,6 +44,7 @@ def fetch_diff(repository, pull_request, token=""):
         ) from exc
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("manifest", help="Labelled JSONL manifest")

@@ -1,6 +1,9 @@
+# 报告渲染：把结构化审查结果转换为 Markdown，供报告接口和 GitHub 评论复用。
+
 from typing import Any, Dict
 
 
+# 按报告结构渲染摘要、问题、证据、修复与执行信息，供下载和评论复用。
 def to_markdown(report: Dict[str, Any]) -> str:
     title = "# EvoAgent PR Review"
     if report.get("pull_request") is not None:
@@ -17,6 +20,16 @@ def to_markdown(report: Dict[str, Any]) -> str:
     ]
     run_mode = report.get("run_mode") or {}
     execution = report.get("execution") or {}
+    coverage = execution.get("coverage")
+    if coverage is not None:
+        lines.extend(["## Diff coverage", "",
+                      "- Text batches: %s/%s complete" % (coverage["completed"], coverage["total"])])
+        for batch in coverage.get("batches", []):
+            if batch["status"] != "completed":
+                lines.append("- Unreviewed batch %s: %s" % (batch["id"], ", ".join(batch["files"])))
+        for item in coverage.get("metadata", []):
+            lines.append("- File metadata: %s (%s)" % (item["path"], item["kind"]))
+        lines.append("")
     if run_mode:
         lines.extend([
             "## Execution facts",
@@ -64,7 +77,8 @@ def to_markdown(report: Dict[str, Any]) -> str:
         ])
     findings = report.get("findings", [])
     if not findings:
-        lines.append("✅ No actionable issue detected in the added lines.")
+        lines.append("No actionable issue in the reviewed text." if coverage is not None else
+                     "✅ No actionable issue detected in the added lines.")
         return "\n".join(lines) + "\n"
     lines.extend(["## Findings", ""])
     icons = {"critical": "🚨", "high": "🔴", "medium": "🟠", "low": "🟡"}
@@ -75,7 +89,8 @@ def to_markdown(report: Dict[str, Any]) -> str:
                 "### %d. %s %s" % (index, icons.get(severity, "•"), item.get("title", "Finding")),
                 "",
                 "`%s:%s` · **%s** · `%s`" % (
-                    item.get("path", ""), item.get("line", 0), severity.upper(), item.get("rule_id", "")),
+                    item.get("path", ""), ("old " if item.get("line_side") == "old" else "") + str(item.get("line", 0)),
+                    severity.upper(), item.get("rule_id", "")),
                 "",
                 item.get("explanation", ""),
                 "",

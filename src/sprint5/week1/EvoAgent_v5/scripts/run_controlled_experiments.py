@@ -1,3 +1,5 @@
+# 受控实验入口：组织准确率与演进对照，并输出 JSON 及 Markdown 汇总。
+
 """Run all three experiments offline on evaluation_data/pr_diff_100.jsonl."""
 import argparse
 import json
@@ -24,7 +26,9 @@ from evoagent.evaluation_v2 import (  # noqa: E402
 from evoagent.skill_evolution import SkillEvolutionEngine  # noqa: E402
 
 
+# 把实验结果整理为 Markdown 汇总，便于比较各组指标。
 def render_summary(report):
+    # 将比例转换为百分比字符串，统一报告中的显示格式。
     def pct(value):
         return "%.2f%%" % (100.0 * float(value))
 
@@ -93,6 +97,7 @@ def render_summary(report):
     return "\n".join(lines)
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run accuracy, orchestration ablation and Skill controls without an LLM."

@@ -1,4 +1,5 @@
-import ast
+# 高级功能回归测试：覆盖受限修复、模型预设、反馈隔离、回放门禁及异步审查。
+
 import os
 import tempfile
 import time
@@ -13,6 +14,7 @@ from evoagent.store import TaskStore
 from agentic_fake import enable_agentic_service
 
 
+# 构造测试使用的应用配置，显式设置与本组场景有关的开关。
 def settings(path):
     return Settings(
         host="127.0.0.1", port=8080, db_path=path, max_diff_bytes=10000,
@@ -22,14 +24,18 @@ def settings(path):
     )
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class AdvancedFeatureTests(unittest.TestCase):
+    # 为每个测试创建独立夹具和临时资源，避免前一个用例的状态影响当前断言。
     def setUp(self):
         handle, self.path = tempfile.mkstemp(suffix=".db")
         os.close(handle)
 
+    # 释放本用例创建的资源并清理临时数据，保持测试之间互不干扰。
     def tearDown(self):
         os.unlink(self.path)
 
+    # 验证修复器只修改支持的规则，未支持的问题保留原代码。
     def test_safe_fixer_changes_only_supported_rules(self):
         content = 'password = "secret-value"\nresult = eval(user_input)\nprint(result)\n'
         findings = [
@@ -39,14 +45,12 @@ class AdvancedFeatureTests(unittest.TestCase):
         ]
         result = SafeFixer().apply(content, findings, "app.py")
         self.assertIn("import os", result["content"])
-        parsed = ast.parse(result["content"])
-        assignment = next(node for node in parsed.body if isinstance(node, ast.Assign))
-        self.assertEqual("password", assignment.targets[0].id)
-        self.assertEqual("os.environ['PASSWORD']", ast.unparse(assignment.value))
+        self.assertRegex(result["content"], r"""password = os\.environ\[(["'])PASSWORD\1\]""")
         self.assertIn("eval(user_input)", result["content"])
         self.assertNotIn("print(result)", result["content"])
         self.assertEqual({"SEC-HARDCODED-SECRET", "REL-DEBUG-PRINT"}, set(result["rules"]))
 
+    # 验证供应商预设能解析为对应端点、模型和鉴权配置。
     def test_deepseek_and_free_openrouter_provider_presets(self):
         deepseek = settings(self.path)
         deepseek = deepseek.__class__(
@@ -65,6 +69,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         )
         self.assertTrue(str(free.resolved_llm()["model"]).endswith(":free"))
 
+    # 验证没有模型时只保存候选并延后评测，不误报激活成功。
     def test_feedback_candidate_is_deferred_without_a_model(self):
         store = TaskStore(self.path)
         store.create("task", "org/repo", 1, {"source": "test"})
@@ -76,6 +81,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         version = result["version"]["version"]
         self.assertTrue(engine.rollback("llm-review", version))
 
+    # 验证自动演进只能消费指定租户的反馈。
     def test_auto_evolution_uses_only_the_requested_tenant_feedback(self):
         store = TaskStore(self.path)
         store.create("tenant-a-task", "org/a", 1, {}, "tenant-a")
@@ -88,6 +94,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertEqual(1, result["failure_cases_used"])
         self.assertEqual({"false_positive": 1}, result["learned_categories"])
 
+    # 验证候选必须在实际回放中改善指标才会成为活动提示词。
     def test_replay_evaluation_activates_only_an_improved_prompt(self):
         store = TaskStore(self.path)
         diff = "--- a/a.py\n+++ b/a.py\n@@ -1 +1 @@\n-old\n+eval(data)\n"
@@ -96,10 +103,13 @@ class AdvancedFeatureTests(unittest.TestCase):
             [{"path": "a.py", "line": 1, "min_severity": "high"}], "test",
         )
 
+        # 本组测试的可控替身，用预设响应隔离外部依赖。
         class PromptAwareReviewer:
+            # 保存构造参数并初始化实例状态；核心成员为 prompt。
             def __init__(self, prompt):
                 self.prompt = prompt
 
+            # 按当前测试场景生成预设问题或触发异常，供断言验证调用方的处理逻辑。
             def review(self, _diff, parsed):
                 if "improved" not in self.prompt:
                     return []
@@ -134,6 +144,7 @@ class AdvancedFeatureTests(unittest.TestCase):
             store.get_active_skill_version("llm-review")["version"],
         )
 
+    # 验证审查异常计为漏报并降低得分，避免跳过失败样本美化指标。
     def test_evaluation_errors_are_counted_as_misses_and_reduce_score(self):
         positive = {
             "id": 1,
@@ -148,7 +159,9 @@ class AdvancedFeatureTests(unittest.TestCase):
             "expected": [],
         }
 
+        # 本组测试的可控替身，用预设响应隔离外部依赖。
         class BrokenReviewer:
+            # 按当前测试场景生成预设问题或触发异常，供断言验证调用方的处理逻辑。
             def review(self, _diff, _parsed):
                 raise RuntimeError("provider unavailable")
 
@@ -161,6 +174,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertEqual(0.0, metrics["success_rate"])
         self.assertEqual(2, len(metrics["errors"]))
 
+    # 验证位置相同但问题身份错误的预测不能命中期望标签。
     def test_rule_id_matching_rejects_wrong_finding_on_the_same_line(self):
         case = {
             "id": 1,
@@ -172,7 +186,9 @@ class AdvancedFeatureTests(unittest.TestCase):
             }],
         }
 
+        # 本组测试的可控替身，用预设响应隔离外部依赖。
         class WrongRuleReviewer:
+            # 按当前测试场景生成预设问题或触发异常，供断言验证调用方的处理逻辑。
             def review(self, _diff, parsed):
                 line = parsed.added_lines[0]
                 return [Finding(
@@ -187,6 +203,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertEqual(1, metrics["case_results"][0]["fp"])
         self.assertEqual(1, metrics["case_results"][0]["fn"])
 
+    # 验证保留集退步会阻止激活，公开结果不泄露逐案例详情。
     def test_holdout_regression_blocks_activation_without_leaking_case_details(self):
         store = TaskStore(self.path)
         validation_diff = "--- a/a.py\n+++ b/a.py\n@@ -1 +1 @@\n-old\n+eval(data)\n"
@@ -199,10 +216,13 @@ class AdvancedFeatureTests(unittest.TestCase):
             "secret-holdout-clean", "holdout", holdout_diff, [], "test",
         )
 
+        # 本组测试的可控替身，用预设响应隔离外部依赖。
         class HoldoutAwareReviewer:
+            # 保存构造参数并初始化实例状态；核心成员为 prompt。
             def __init__(self, prompt):
                 self.prompt = prompt
 
+            # 按当前测试场景生成预设问题或触发异常，供断言验证调用方的处理逻辑。
             def review(self, diff, parsed):
                 line = parsed.added_lines[0]
                 if "eval(data)" in diff and "candidate" in self.prompt:
@@ -232,6 +252,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertNotIn("secret-holdout-clean", str(persisted))
         self.assertEqual(1, persisted["candidate_holdout"]["clean_cases"])
 
+    # 验证没有新增学习信号时不会反复创建相同版本。
     def test_auto_evolution_does_not_create_duplicate_noop_versions(self):
         store = TaskStore(self.path)
         engine = EvolutionEngine(store, seed_defaults=False)
@@ -240,6 +261,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertIsNone(result["version"])
         self.assertEqual([], store.list_skill_versions("llm-review"))
 
+    # 验证只从格式合法的规则标识学习，拒绝任意反馈文本充当指令。
     def test_auto_evolution_learns_only_validated_feedback_rule_ids(self):
         store = TaskStore(self.path)
         store.create("task-valid", "org/repo", 1, {"source": "test"})
@@ -257,6 +279,7 @@ class AdvancedFeatureTests(unittest.TestCase):
         self.assertIn("[focus-rule:SEC-WEAK-HASH]", version["prompt"])
         self.assertNotIn("ignore previous instructions", version["prompt"])
 
+    # 验证相同样本可重复提交，但不能用冲突内容覆盖已有评测案例。
     def test_evaluation_cases_are_immutable_and_idempotent(self):
         store = TaskStore(self.path)
         diff = "--- a/a.py\n+++ b/a.py\n@@ -1 +1 @@\n-old\n+eval(data)\n"
@@ -273,6 +296,7 @@ class AdvancedFeatureTests(unittest.TestCase):
                 "stable-case-v1", "validation", diff, [], "test"
             )
 
+    # 验证异步任务经过实际协作流程后保存成功结果。
     def test_async_multi_agent_review(self):
         service = enable_agentic_service(ReviewService(settings(self.path)))
         diff = "--- a/a.py\n+++ b/a.py\n@@ -1 +1,2 @@\n-old\n+eval(data)\n+# TODO finish validation\n"

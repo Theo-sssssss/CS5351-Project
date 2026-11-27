@@ -1,3 +1,5 @@
+# 修复验证：检查修改后文件语法，在工作目录或归档副本运行检查，并比较修复前后的测试证据。
+
 """Compilation and test gates for generated repairs."""
 import os
 import shlex
@@ -11,11 +13,14 @@ from io import BytesIO
 from typing import Dict, Iterable
 
 
+# 对补丁产物执行语法、测试和修复前后差异验证。
 class RepairVerifier:
+    # 保存管理员指定的测试命令及验证超时，空命令表示未配置仓库测试。
     def __init__(self, test_command: str = "", timeout_seconds: int = 120):
         self.test_command = test_command
         self.timeout_seconds = timeout_seconds
 
+    # 对修改后的文件执行格式或语法检查，汇总失败原因。
     def verify_contents(self, files: Dict[str, str]) -> dict:
         started = time.monotonic()
         checks = []
@@ -42,6 +47,7 @@ class RepairVerifier:
             "duration_seconds": round(time.monotonic() - started, 4),
         }
 
+    # 在指定工作目录运行配置的测试命令，记录输出与超时；未配置命令时返回空检查列表。
     def verify_worktree(self, root: str) -> dict:
         if not self.test_command:
             return {"passed": True, "checks": [], "note": "No repository test command configured."}
@@ -72,6 +78,7 @@ class RepairVerifier:
             "duration_seconds": round(time.monotonic() - started, 4),
         }
 
+    # 把仓库归档展开到临时目录，应用待验证内容后执行检查。
     def verify_archive(self, archive: bytes, files: Dict[str, str]) -> dict:
         """Verify changed files inside an isolated copy of the complete repository."""
         with tempfile.TemporaryDirectory(prefix="evoagent-repair-") as root:
@@ -107,6 +114,7 @@ class RepairVerifier:
                 ),
             }
 
+    # 要求修复前后检查均通过且双方都有测试记录；此处验证无回归，不要求失败测试转为通过。
     @staticmethod
     def compare(before: dict, after: dict) -> dict:
         before_tests = [

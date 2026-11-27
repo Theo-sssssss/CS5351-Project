@@ -1,3 +1,5 @@
+# 端到端评测：校验 JSONL 样本，以一对一匹配统计审查结果，并汇总修复与运行指标。
+
 """End-to-end PR diff evaluation with reproducible matching and repair gates."""
 import hashlib
 import json
@@ -15,6 +17,7 @@ from .verifier import RepairVerifier
 
 SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
+# 一个预测与一个期望问题之间的匹配记录。
 @dataclass
 class Match:
     expected_index: int
@@ -22,10 +25,12 @@ class Match:
     location_distance: int
 
 
+# 按稳定的键顺序生成紧凑 JSON，供内容比较和指纹计算使用。
 def _canonical_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+# 按规范化内容计算数据集指纹，检测样本或标签变化。
 def dataset_fingerprint(cases: Iterable[dict]) -> str:
     """Fingerprint exactly what is scored, independent of JSONL formatting."""
     digest = hashlib.sha256()
@@ -35,6 +40,7 @@ def dataset_fingerprint(cases: Iterable[dict]) -> str:
     return digest.hexdigest()
 
 
+# 逐行读取 JSONL 并校验样本，将格式错误定位到输入数据。
 def load_jsonl(path: str) -> List[dict]:
     cases = []
     with open(path, "r", encoding="utf-8") as handle:
@@ -53,6 +59,7 @@ def load_jsonl(path: str) -> List[dict]:
     return cases
 
 
+# 校验案例必需字段、Diff 与期望标签结构，确保后续指标可比较。
 def validate_case(case: dict, line_number: int = 0) -> None:
     prefix = "dataset line %d" % line_number if line_number else "evaluation case"
     for field in ("id", "repository", "pull_request", "split", "diff", "expected_findings"):
@@ -85,11 +92,13 @@ def validate_case(case: dict, line_number: int = 0) -> None:
             raise ValueError("%s finding does not cover an added line" % prefix)
 
 
+# 统一路径分隔符和前缀，避免同一文件因路径写法不同而漏匹配。
 def _normalized_path(path: str) -> str:
     value = path.replace("\\", "/").strip()
     return value[2:] if value.startswith(("a/", "b/")) else value
 
 
+# 为预测与期望标签建立兼容边，同时约束路径、行号及问题身份。
 def _candidate_edges(
     expected: List[dict], predicted: List[Finding], line_tolerance: int,
 ) -> Dict[int, List[Tuple[int, int]]]:
@@ -119,6 +128,7 @@ def _candidate_edges(
     return edges
 
 
+# 用增广匹配让每个预测和标签最多命中一次，避免重复问题虚增得分。
 def one_to_one_match(
     expected: List[dict], predicted: List[Finding], line_tolerance: int = 2,
 ) -> List[Match]:
@@ -126,6 +136,7 @@ def one_to_one_match(
     edges = _candidate_edges(expected, predicted, line_tolerance)
     prediction_owner: Dict[int, int] = {}
 
+    # 为一个期望标签寻找预测；预测已被占用时递归重排，尽量匹配更多标签。
     def assign(expected_index: int, visited: set) -> bool:
         for predicted_index, _distance in edges.get(expected_index, []):
             if predicted_index in visited:
@@ -152,6 +163,7 @@ def one_to_one_match(
     return sorted(matches, key=lambda item: (item.expected_index, item.predicted_index))
 
 
+# 受控案例使用的规则修复器，供离线端到端指标计算。
 class FixtureRepairer:
     """Conservative deterministic repairer used by the controlled benchmark.
 
@@ -159,6 +171,7 @@ class FixtureRepairer:
     The same evaluator and gates can consume either implementation.
     """
 
+    # 在评测夹具中应用支持的修复，记录是否产生可验证的变化。
     def repair(self, case: dict, finding: Finding) -> Dict[str, Any]:
         validation = dict(case.get("repair_validation") or {})
         path = finding.path
@@ -192,6 +205,7 @@ class FixtureRepairer:
             "content": repaired,
         }
 
+    # 按夹具中支持的规则转换代码，供确定性修复评测使用。
     @staticmethod
     def _transform(content: str, finding: Finding) -> str:
         rule = finding.rule_id
@@ -227,6 +241,7 @@ class FixtureRepairer:
             )
         return content
 
+    # 仅在缺少目标导入时补入，避免重复修改文件。
     @staticmethod
     def _ensure_import(content: str, module: str) -> str:
         if re.search(r"(?m)^\s*(import %s|from %s import)" % (module, module), content):
@@ -234,13 +249,16 @@ class FixtureRepairer:
         return "import %s\n" % module + content
 
 
+# 统一执行单案例审查、匹配、修复和整体统计。
 class EndToEndEvaluationHarness:
+    # 设置预测位置匹配允许的行号偏差，并绑定可选修复器；审查器由运行入口传入。
     def __init__(
         self, line_tolerance: int = 2, repairer: Optional[FixtureRepairer] = None,
     ):
         self.line_tolerance = line_tolerance
         self.repairer = repairer
 
+    # 逐案例执行审查和修复评测，汇总结果并绑定数据集指纹。
     def run(self, reviewer: Reviewer, cases: List[dict], name: str = "") -> Dict[str, Any]:
         started = time.monotonic()
         totals = self._empty_totals()
@@ -278,6 +296,7 @@ class EndToEndEvaluationHarness:
             "case_results": case_results,
         }
 
+    # 执行单个样本的审查、匹配与修复评测，并保存可追溯的案例结果。
     def _run_case(self, reviewer: Reviewer, case: dict) -> Dict[str, Any]:
         expected = [
             item for item in case["expected_findings"]
@@ -363,6 +382,7 @@ class EndToEndEvaluationHarness:
             result["error"] = str(exc)[:1000]
         return result
 
+    # 创建评测累计器，为各项计数和耗时设置初始值。
     @staticmethod
     def _empty_totals() -> Dict[str, int]:
         return {
@@ -372,6 +392,7 @@ class EndToEndEvaluationHarness:
             "repair_passed": 0, "e2e_successes": 0,
         }
 
+    # 把一个案例的统计结果加到总计中，保持样本级与整体指标对应。
     @staticmethod
     def _accumulate(totals: Dict[str, int], result: dict) -> None:
         totals["cases"] += 1
@@ -386,8 +407,10 @@ class EndToEndEvaluationHarness:
         totals["execution_successes"] += int(result["execution_success"])
         totals["e2e_successes"] += int(result["e2e_success"])
 
+    # 从累计计数计算准确率、召回率及其他评测指标，处理零分母情况。
     @staticmethod
     def _metrics(totals: Dict[str, int]) -> Dict[str, Any]:
+        # 安全计算比例，分母为零时返回约定默认值。
         def ratio(numerator: int, denominator: int, empty: float = 1.0) -> float:
             return round(numerator / denominator, 4) if denominator else empty
 
@@ -416,6 +439,7 @@ class EndToEndEvaluationHarness:
         }
 
 
+# 比较两个评测报告的关键指标，形成统一的差异摘要。
 def comparison_summary(
     baseline: dict, candidate: dict, minimum_f1_improvement: float = 0.02,
     minimum_execution_success: float = 0.98, minimum_safe_fix_rate: float = 0.75,

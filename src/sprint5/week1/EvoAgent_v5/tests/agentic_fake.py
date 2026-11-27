@@ -1,10 +1,14 @@
+# 测试用模型替身：用确定性响应模拟角色协议，避免单元测试依赖外部模型服务。
+
 import json
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class FakeAgenticClient:
     provider = "fake"
     model = "fake-model"
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         if ledger:
             ledger.record_model(
@@ -14,6 +18,8 @@ class FakeAgenticClient:
         managed = json.loads(user)
         task = json.loads(managed["task"])
         if role == "lead":
+            if task["phase"] == "overview":
+                return {"action": "final", "review_focus": ["Review every batch"]}
             if task["phase"] == "delegate":
                 skills = [
                     item["name"] for item in task.get("available_agent_skills") or []
@@ -84,6 +90,7 @@ class FakeAgenticClient:
         raise AssertionError(role)
 
 
+# 将服务切换到确定性模型替身，使测试运行完整协作链路而无需外部请求。
 def enable_agentic_service(service):
     service.chat_client = FakeAgenticClient()
     service.reviewer = service._build_agentic_reviewer()

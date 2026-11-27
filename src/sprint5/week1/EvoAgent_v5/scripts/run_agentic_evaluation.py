@@ -1,3 +1,5 @@
+# 多 Agent 生产评测入口：载入案例与可选 Skill 制品，执行指定实验组比较。
+
 """Run the single-model, scanner, multi-Agent, Critic and Skill ablations."""
 import argparse
 import json
@@ -19,6 +21,7 @@ from evoagent.llm import JsonChatClient  # noqa: E402
 from evoagent.skill_evolution import validate_artifact  # noqa: E402
 
 
+# 从可选制品文件读取并校验 Skill，供命令行指定实验输入。
 def load_skill_artifact(path, skill_name):
     if not path:
         return None
@@ -30,6 +33,7 @@ def load_skill_artifact(path, skill_name):
     return validate_artifact(value, skill_name)
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main():
     parser = argparse.ArgumentParser(
         description=(

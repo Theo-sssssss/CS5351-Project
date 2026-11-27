@@ -1,3 +1,5 @@
+# 实验编排测试：覆盖仓库隔离划分、指标契约、协作成本与学习数据边界。
+
 import json
 import unittest
 
@@ -25,10 +27,12 @@ DIFF = (
 )
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class ExperimentClient:
     provider = "fake"
     model = "fake-model"
 
+    # 按角色和输入上下文返回确定性 JSON，并记录测试需要核对的调用信息。
     def complete_json(self, role, _system, user, ledger=None, max_tokens=None):
         if ledger:
             ledger.record_model(
@@ -80,14 +84,17 @@ class ExperimentClient:
         raise AssertionError(role)
 
 
+# 本组测试的可控替身，用预设响应隔离外部依赖。
 class ArtifactAwareReviewer(Reviewer):
     name = "artifact-aware"
 
+    # 保存构造参数并初始化实例状态；核心成员为 enabled。
     def __init__(self, artifact):
         self.enabled = "evoagent:learned:LEARN-MISSING:start" in (
             artifact["files"]["SKILL.md"]
         )
 
+    # 按当前测试场景生成预设问题或触发异常，供断言验证调用方的处理逻辑。
     def review(self, diff, parsed):
         if not self.enabled:
             return []
@@ -100,6 +107,7 @@ class ArtifactAwareReviewer(Reviewer):
         )]
 
 
+# 构造带明确期望标签的评测案例，便于核对各实验组指标。
 def labelled_case(identifier, split, rule_id="SEC-PATH-TRAVERSAL"):
     return {
         "schema_version": 1,
@@ -117,7 +125,9 @@ def labelled_case(identifier, split, rule_id="SEC-PATH-TRAVERSAL"):
     }
 
 
+# 集中验证本模块的正常行为、错误路径及数据边界。
 class EvaluationExperimentTests(unittest.TestCase):
+    # 验证受控数据按仓库隔离划分为 60/20/20，避免跨集合信息泄露。
     def test_controlled_adapter_creates_repository_disjoint_60_20_20_splits(self):
         cases = prepare_controlled_experiment_cases(load_controlled_pr_cases())
         self.assertEqual(60, sum(item["split"] == "train" for item in cases))
@@ -135,6 +145,7 @@ class EvaluationExperimentTests(unittest.TestCase):
             for item in cases for finding in item["expected_findings"]
         ))
 
+    # 验证受控准确率报告包含约定的完整指标字段。
     def test_controlled_accuracy_reports_full_metric_contract(self):
         report = AccuracyExperimentSuite().run()
         self.assertTrue(report["controlled"]["dataset_contract_passed"])
@@ -147,6 +158,7 @@ class EvaluationExperimentTests(unittest.TestCase):
         ):
             self.assertIn(name, metrics)
 
+    # 验证五组消融对比同时报告协作结构与调用成本。
     def test_five_arm_ablation_reports_collaboration_and_cost(self):
         artifact = SkillEvolutionEngine.empty_artifact("evolved-review")
         factories = experiment_reviewer_factories(
@@ -169,6 +181,7 @@ class EvaluationExperimentTests(unittest.TestCase):
         self.assertIn("revision_requests_per_pr", execution)
         self.assertIn("average_cost_usd_per_pr", execution)
 
+    # 验证学习使用训练反馈、验证门禁和固定保留集，各集合职责清晰。
     def test_skill_evolution_uses_train_validation_and_locked_holdout(self):
         cases = [
             labelled_case("train", "train", "LEARN-MISSING"),

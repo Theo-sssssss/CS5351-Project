@@ -1,3 +1,4 @@
+/* 全局设计变量：颜色、边框、阴影和圆角供控制台与登录层共同使用。 */
 :root {
   color-scheme: dark;
   --bg: #0b0d10;
@@ -25,6 +26,74 @@
   --radius-control: 10px;
 }
 
+.workbench-actions { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-block: .85rem; }
+.workbench-actions > label { flex: 0 1 15rem; }
+.workbench-progress { border: 1px solid var(--line); border-radius: var(--radius-control); padding: .65rem .85rem; background: var(--surface-soft); overflow-wrap: anywhere; }
+.workbench-list { padding-left: 1.35rem; overflow-wrap: anywhere; }
+.workbench-list li { margin: .45rem 0; }
+.workbench-report { margin-top: 1rem; }
+.finding-detail { padding-block: .65rem; border-bottom: 1px solid var(--line); }
+.finding-detail small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.report-panel details, #version-detail details { margin-block: .55rem; }
+.report-panel summary, #view-evolution summary { cursor: pointer; }
+.state-paused_budget { color: var(--amber); }
+.version-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+.version-compare pre { max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.version-metrics { width: 100%; border-collapse: collapse; margin-block: 1rem; }
+.version-metrics th, .version-metrics td { text-align: left; border-bottom: 1px solid var(--line); padding: .55rem; }
+.task-list-panel, .report-panel, .review-workspace > * { min-width: 0; }
+.task-list-panel .field-row { gap: .5rem; }
+.task-pages { justify-content: space-between; font-variant-numeric: tabular-nums; }
+.task-links { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; color: var(--muted); font-size: .875rem; }
+.task-links a, #fix-result a, #version-detail a { color: var(--accent-bright); }
+.task-links ul { margin-block: .4rem; padding-inline-start: 1.1rem; }
+.review-workspace { display: grid; grid-template-columns: minmax(12rem, .85fr) minmax(0, 1.9fr); border: 1px solid var(--line); border-radius: var(--radius-control); margin-block: 1rem; overflow: hidden; }
+.review-navigator { padding: .85rem; border-inline-end: 1px solid var(--line); background: var(--surface-soft); }
+.review-navigator > details { margin-block: 0; }
+.review-navigator > details > summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .2rem .25rem .65rem; font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); list-style: none; border-bottom: 1px solid var(--line); user-select: none; }
+.review-navigator > details > summary::-webkit-details-marker { display: none; }
+.review-navigator > details > summary::before { content: "▸"; font-size: .72rem; color: var(--faint); transition: transform .16s ease; }
+.review-navigator > details[open] > summary::before { transform: rotate(90deg); }
+.review-navigator > details > summary span:first-child { margin-inline-end: auto; }
+#diff-file-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.4rem; height: 1.25rem; padding-inline: .4rem; border-radius: 999px; background: var(--surface-raised); border: 1px solid var(--line); color: var(--ink); font-size: .72rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.diff-files { display: flex; flex-direction: column; gap: .3rem; max-height: 13rem; overflow: auto; margin-top: .65rem; padding-block: .1rem; }
+.diff-files summary { overflow-wrap: anywhere; color: var(--muted); font-size: .8rem; padding: .2rem .35rem; }
+.code-file, .finding-row { display: flex; justify-content: space-between; align-items: center; gap: .5rem; width: 100%; border: 1px solid transparent; border-radius: 8px; padding: .5rem .65rem; background: transparent; color: var(--ink); font: inherit; font-size: .875rem; text-align: start; cursor: pointer; overflow-wrap: anywhere; transition: background .15s ease, border-color .15s ease; }
+.code-file > span { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .84rem; font-weight: 500; }
+.code-file small, .finding-row small { display: block; color: var(--muted); font-size: .75rem; }
+.code-file small { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-weight: 600; }
+.code-file .stat-add { color: var(--green); }
+.code-file .stat-del { color: var(--red); }
+.finding-row { flex-direction: column; align-items: flex-start; border-bottom-color: var(--line); }
+.code-file:hover, .finding-row:hover { background: var(--surface-hover); }
+.code-file[aria-current="true"], .finding-row[aria-current="true"], .task-row[aria-current="true"] { border-color: var(--accent-line); background: var(--accent-soft); }
+.finding-filters { display: grid; gap: .4rem; margin-block: .8rem; }
+.diff-pane { min-width: 0; }
+.diff-bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .6rem; flex-wrap: wrap; }
+.diff-bar h4 { margin: 0; overflow-wrap: anywhere; }
+.diff-pagination { display: flex; gap: .35rem; }
+#diff-status { padding-inline: .6rem; }
+.diff-code { position: relative; overflow: auto; max-height: 36rem; min-height: 8rem; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; tab-size: 4; }
+.diff-columns, .diff-line { display: grid; grid-template-columns: 3.1rem 3.1rem minmax(max-content, 1fr); min-width: max-content; line-height: 1.65; }
+.diff-columns { position: sticky; inset-block-start: 0; z-index: 1; background: var(--surface-raised); font-weight: 600; }
+.diff-columns > *, .diff-line > * { padding-inline: .4rem; }
+.diff-line span { text-align: end; color: var(--muted); user-select: none; }
+.diff-line code { white-space: pre; color: var(--ink); }
+.diff-added { background: color-mix(in srgb, var(--green) 12%, var(--surface)); }
+.diff-removed { background: color-mix(in srgb, var(--red) 12%, var(--surface)); }
+.diff-anchor { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.version-diff .diff-added, .version-diff .diff-removed { display: block; }
+.version-diff { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; }
+.workbench-start { min-height: 2rem; }
+@media (max-width: 760px) {
+  .review-workspace { grid-template-columns: minmax(0, 1fr); }
+  .review-navigator { border-inline-end: 0; border-block-end: 1px solid var(--line); }
+  .finding-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .diff-code { max-height: 24rem; }
+}
+@media (max-width: 760px) { .version-compare { grid-template-columns: minmax(0, 1fr); } }
+
+/* 基础样式与表单字体统一，键盘操作使用清晰的 focus-visible 焦点轮廓。 */
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -51,11 +120,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   outline-offset: 3px;
 }
 
+/* 桌面布局：固定宽度侧栏和可收缩内容列，避免长内容撑开页面。 */
 .app-shell {
   display: grid;
   grid-template-columns: 252px minmax(0, 1fr);
   min-height: 100dvh;
 }
+/* 侧栏保持在视口内；z-index 使导航位于普通内容之上。 */
 .sidebar {
   position: sticky;
   top: 0;
@@ -69,6 +140,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     rgba(12, 14, 17, .97);
   border-right: 1px solid var(--line);
 }
+/* 品牌标识与辅助文字，登录层复用部分品牌样式。 */
 .brand {
   display: flex;
   align-items: center;
@@ -99,6 +171,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   font: 700 8px/1.2 "Cascadia Code", Consolas, monospace;
   letter-spacing: 1.45px;
 }
+/* 主导航按钮及当前页面状态；图标缩写取自 HTML 的 data-icon。 */
 .nav-list { display: grid; gap: 5px; }
 .nav-item {
   position: relative;
@@ -183,6 +256,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   box-shadow: 0 0 0 5px rgba(86, 186, 141, .09);
 }
 
+/* 内容列允许收缩；顶部工具栏提供页面标题、刷新和退出操作。 */
 main { min-width: 0; padding: 0 40px 60px; }
 .topbar {
   position: sticky;
@@ -227,11 +301,13 @@ main { min-width: 0; padding: 0 40px 60px; }
 .refresh-button:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface-raised); transform: translateY(-1px); }
 .refresh-button:active { transform: translateY(1px); }
 
+/* app.js 用 active 切换视图，用 hidden 隐藏登录、反馈和修复等条件区域。 */
 .view { display: none; animation: appear .32s cubic-bezier(.16, 1, .3, 1); }
 .view.active { display: block; }
 .hidden { display: none !important; }
 @keyframes appear { from { opacity: .72; transform: translateY(6px); filter: blur(2px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
 
+/* 通用操作按钮；异步请求期间使用 disabled 状态防止重复点击。 */
 .button {
   display: inline-flex;
   align-items: center;
@@ -270,6 +346,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .link-button { color: var(--accent-bright); }
 .text-button:hover, .link-button:hover { color: var(--ink); }
 
+/* 总览引导区：左侧介绍与入口，右侧为装饰性的协作图形。 */
 .hero {
   position: relative;
   isolation: isolate;
@@ -309,6 +386,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .hero p { max-width: 610px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
 .hero-actions { display: flex; align-items: center; gap: 22px; margin-top: 28px; }
 .hero-visual { position: relative; justify-self: end; width: 288px; height: 278px; }
+/* 圆形轨道、中心标识和节点共同组成装饰图；不表示实时任务状态。 */
 .orbit {
   position: absolute;
   inset: 50%;
@@ -352,6 +430,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .node-b { right: -2px; bottom: 29px; }
 .node-c { left: -2px; bottom: 30px; }
 
+/* 仅当用户未要求减少动态效果时启用轨道旋转与中心呼吸效果。 */
 @media (prefers-reduced-motion: no-preference) {
   .orbit-one { animation: orbit-forward 22s linear infinite; }
   .orbit-two { animation: orbit-reverse 16s linear infinite; }
@@ -364,6 +443,7 @@ main { min-width: 0; padding: 0 40px 60px; }
   50% { box-shadow: 0 20px 48px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .38); }
 }
 
+/* 总览统计卡片；每项通过 --stat-color 标识对应业务状态。 */
 .stats {
   display: grid;
   grid-template-columns: 1.1fr 1fr 1fr 1.2fr 1fr 1fr;
@@ -405,6 +485,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 @media (hover: hover) {
   .stat:hover { background: rgba(255, 255, 255, .025); transform: translateY(-2px); }
 }
+/* 首屏加载占位采用渐变扫光，底部的减少动态效果规则可关闭动画。 */
 .loading {
   min-height: 106px;
   background: linear-gradient(90deg, #111419 24%, #1b2027 40%, #111419 64%);
@@ -413,6 +494,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 }
 @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
+/* 总览分栏与通用面板，分别承载近期任务和执行链。 */
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(330px, .7fr); gap: 16px; }
 .panel {
   min-width: 0;
@@ -426,6 +508,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .panel h3, .panel-head h3 { margin: 0; font-size: 16px; letter-spacing: -.45px; }
 .muted { color: var(--faint); font-size: 11px; }
 .eyebrow { margin: 0; color: var(--faint); font: 700 9px/1.2 "Cascadia Code", Consolas, monospace; letter-spacing: .9px; }
+/* 状态徽章公共样式；完成、失败与运行中使用不同颜色和边框。 */
 .status {
   display: inline-flex;
   align-items: center;
@@ -443,6 +526,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .state-failed, .state-cancelled { color: #ffc0c0; background: rgba(237, 116, 116, .1); border-color: rgba(237, 116, 116, .18); }
 .state-pending, .state-planning, .state-executing, .state-reviewing { color: #f2c77f; background: rgba(216, 166, 83, .1); border-color: rgba(216, 166, 83, .18); }
 
+/* 任务列表、悬停反馈、加载占位和空结果展示。 */
 .task-list { min-height: 120px; }
 .task-row {
   display: grid;
@@ -483,6 +567,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .empty-state b { display: block; margin-bottom: 5px; color: var(--muted); }
 .list-section-label { margin: 20px 0 6px; color: var(--muted); font-size: 11px; font-weight: 650; }
 
+/* 执行链中的阶段、连接线及模型启用和错误状态。 */
 .agent-flow { padding-top: 2px; }
 .agent-step { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
 .agent-step:last-child { border-bottom: 0; }
@@ -510,6 +595,7 @@ main { min-width: 0; padding: 0 40px 60px; }
 .agent-step.is-error em { color: var(--red); }
 .flow-line { display: block; height: 10px; margin-left: 21px; border-left: 1px solid var(--accent-line); }
 
+/* 业务页面标题与表单分栏，输入区和说明区共享布局规则。 */
 .section-heading { margin: 8px 0 23px; }
 .section-heading.inline { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .section-heading h2 { margin: 0 0 7px; font-size: 27px; letter-spacing: -1px; }
@@ -522,6 +608,7 @@ label { display: block; margin: 0 0 17px; color: #c5cbd2; font-size: 11px; font-
 .field-label { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .field-meta { color: var(--faint); font: 500 9px/1.4 "Cascadia Code", Consolas, monospace; font-variant-numeric: tabular-nums; }
 .optional { color: var(--faint); font-size: 9px; font-weight: 500; }
+/* 统一输入控件的尺寸、背景和边框，焦点时显示强调轮廓。 */
 input, select, textarea {
   display: block;
   width: 100%;
@@ -559,6 +646,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 .strategy-panel strong, .strategy-panel small { display: block; }
 .strategy-panel strong { font-size: 11px; }
 .strategy-panel small { margin-top: 4px; color: var(--faint); font-size: 9px; }
+/* 提交结果采用等宽文本显示，处理较长的 JSON 与错误信息。 */
 .result {
   max-height: 360px;
   overflow: auto;
@@ -574,8 +662,8 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 }
 .result.empty { color: var(--faint); }
 
-.tasks-layout { display: grid; grid-template-columns: minmax(310px, .78fr) minmax(0, 1.22fr); gap: 16px; align-items: start; }
-.report-panel { position: sticky; top: 20px; }
+/* 任务页左侧列表、右侧报告；预格式化内容在面板内部滚动。 */
+.tasks-layout { display: grid; grid-template-columns: minmax(14rem, .56fr) minmax(0, 1.44fr); gap: 16px; align-items: start; }
 .report-panel pre, .status-panel pre {
   min-height: 280px;
   max-height: 570px;
@@ -591,6 +679,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
   font: 10px/1.75 "Cascadia Code", Consolas, monospace;
   font-variant-numeric: tabular-nums;
 }
+/* 任务反馈区域：类型、关联问题、漏报定位字段和历史记录。 */
 .feedback-panel {
   margin-top: 16px;
   padding: 20px;
@@ -610,7 +699,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
   background: var(--accent-soft);
   font: 700 8px/1.2 "Cascadia Code", Consolas, monospace;
 }
-.feedback-fields { grid-template-columns: minmax(130px, .55fr) minmax(0, 1.45fr); }
+.feedback-fields { grid-template-columns: minmax(145px, .8fr) minmax(110px, .55fr) minmax(0, 1.45fr); }
 .feedback-missed-fields { margin: -2px 0 13px; padding: 13px; border: 1px solid var(--line); border-radius: var(--radius-control); background: rgba(11, 13, 16, .45); }
 .feedback-missed-fields > p { margin: 0 0 12px; color: var(--faint); font-size: 10px; line-height: 1.5; }
 .feedback-location-fields { grid-template-columns: 1fr 1.35fr .55fr; gap: 10px; }
@@ -628,6 +717,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 .feedback-case-copy b, .feedback-case-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .feedback-case-copy b { color: #cbd1d8; font-size: 10px; font-weight: 620; }
 .feedback-case-copy small { margin-top: 4px; color: var(--faint); font-size: 9px; }
+/* 演进流程说明和评测状态面板。 */
 .evolution-purpose {
   display: flex;
   flex-wrap: wrap;
@@ -645,6 +735,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 .evolution-purpose p { flex-basis: 100%; margin: 4px 0 0; color: var(--faint); font-size: 10px; line-height: 1.55; }
 .status-panel { margin-bottom: 16px; }
 .status-panel pre { min-height: auto; max-height: 240px; }
+/* 模型能力卡片；区分可用、未配置和读取失败状态。 */
 .llm-capability {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -693,6 +784,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 .section-subhead { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin: 24px 2px 12px; }
 .section-subhead h3 { margin: 0; font-size: 15px; }
 .section-subhead span { color: var(--faint); font-size: 10px; }
+/* Skill 卡片网格，窄屏断点下切换为更适合阅读的布局。 */
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .skill-card {
   position: relative;
@@ -711,6 +803,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 .skill-meta i { display: none; }
 .evolution-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 
+/* 全局短提示通过 show 类切换显隐，由 app.js 控制持续时间。 */
 .toast {
   position: fixed;
   right: 22px;
@@ -731,6 +824,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
 }
 .toast.show { opacity: 1; transform: translateY(0); }
 
+/* 中等桌面宽度：收紧间距和卡片排布。 */
 @media (max-width: 1180px) {
   .stats { grid-template-columns: repeat(3, 1fr); }
   .stat:nth-child(3n) { border-right: 0; }
@@ -739,6 +833,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
   .hero-visual { width: 245px; transform: scale(.9); }
 }
 
+/* 平板宽度：缩减侧栏占用并调整分栏。 */
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 78px minmax(0, 1fr); }
   .sidebar { padding: 20px 10px 16px; }
@@ -756,6 +851,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
   .hero-visual { display: none; }
 }
 
+/* 移动端：重排导航和业务面板，避免表单产生横向溢出。 */
 @media (max-width: 700px) {
   body { padding-bottom: 76px; }
   .app-shell { display: block; }
@@ -803,6 +899,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
   .toast { right: 16px; bottom: 84px; }
 }
 
+/* 更窄屏幕：进一步压缩留白与导航文字占用。 */
 @media (max-width: 410px) {
   .nav-list { grid-template-columns: repeat(5, minmax(42px, 1fr)); }
   .nav-item::before { width: 31px; height: 32px; font-size: 8px; }
@@ -812,6 +909,7 @@ textarea { min-height: 150px; resize: vertical; font: 11px/1.7 "Cascadia Code", 
   .task-meta { flex-direction: column; gap: 2px; }
 }
 
+/* 系统要求减少动态效果时停用动画、过渡与平滑滚动。 */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {

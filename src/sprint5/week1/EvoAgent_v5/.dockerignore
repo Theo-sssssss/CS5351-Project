@@ -4,5 +4,4 @@ __pycache__
 .git
 .env
 tests
-.venv/
-.venv.backup-*/
+

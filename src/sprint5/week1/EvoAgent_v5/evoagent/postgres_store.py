@@ -1,3 +1,6 @@
+# PostgreSQL 持久化后端：保存任务、轨迹、记忆、评测版本、租户授权及发布状态。
+# 接口与 SQLite 存储对应；JSON 字段在数据库边界编码和还原。
+
 """PostgreSQL persistence backend.
 
 The implementation mirrors TaskStore's public API and is selected when
@@ -6,13 +9,18 @@ dependency so local development can remain zero-config.
 """
 import hashlib
 import json
+from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
 from .models import ReviewReport, TaskState, TraceEvent
 from .store import utc_now
+from .workbench_store import WorkbenchStore
 
 
-class PostgresTaskStore:
+# PostgreSQL 存储实现，与本地存储保持对应的业务接口。
+class PostgresTaskStore(WorkbenchStore):
+    workbench_postgres = True
+    # 加载 PostgreSQL 驱动并保存连接参数，随后初始化表结构。
     def __init__(self, url: str):
         try:
             import psycopg
@@ -23,10 +31,13 @@ class PostgresTaskStore:
         self.dict_row = dict_row
         self.url = url
         self._init()
+        self.init_workbench()
 
+    # 建立数据库连接，并设置本后端使用的行结果格式。
     def _connect(self):
         return self.psycopg.connect(self.url, row_factory=self.dict_row)
 
+    # 创建所需表和索引，并执行已有数据库的兼容性初始化。
     def _init(self) -> None:
         statements = [
             """CREATE TABLE IF NOT EXISTS tasks (
@@ -37,7 +48,8 @@ class PostgresTaskStore:
                 id BIGSERIAL PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id), step INTEGER NOT NULL,
                 state TEXT NOT NULL, message TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL)""",
             """CREATE TABLE IF NOT EXISTS failure_cases (
-                id BIGSERIAL PRIMARY KEY, task_id TEXT NOT NULL, category TEXT NOT NULL,
+                id BIGSERIAL PRIMARY KEY, task_id TEXT NOT NULL,
+                skill_name TEXT NOT NULL DEFAULT 'llm-review', category TEXT NOT NULL,
                 payload_json JSONB NOT NULL, resolved BOOLEAN NOT NULL DEFAULT FALSE,
                 created_at TIMESTAMPTZ NOT NULL)""",
             """CREATE TABLE IF NOT EXISTS skill_versions (
@@ -73,6 +85,8 @@ class PostgresTaskStore:
             "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default'",
             "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS cancel_requested BOOLEAN NOT NULL DEFAULT FALSE",
             "ALTER TABLE installations ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default'",
+            "ALTER TABLE failure_cases ADD COLUMN IF NOT EXISTS skill_name TEXT NOT NULL DEFAULT 'llm-review'",
+            "CREATE INDEX IF NOT EXISTS idx_failure_cases_skill_unresolved ON failure_cases(skill_name,resolved,id)",
             """CREATE TABLE IF NOT EXISTS checkpoints (
                 task_id TEXT NOT NULL REFERENCES tasks(id), node TEXT NOT NULL, status TEXT NOT NULL,
                 attempt INTEGER NOT NULL DEFAULT 1, state_json JSONB NOT NULL, error TEXT,
@@ -128,6 +142,7 @@ class PostgresTaskStore:
                 for statement in statements:
                     cur.execute(statement)
 
+    # 创建初始任务记录，将输入元信息与租户绑定。
     def create(
         self, task_id: str, repository: str, pull_request: Optional[int],
         payload: Dict[str, Any], tenant_id: str = "default",
@@ -142,6 +157,15 @@ class PostgresTaskStore:
                  json.dumps(payload), now, now, tenant_id),
             )
 
+    # 同时更新任务状态与轨迹事件，保持进度记录可追溯。
+    @contextmanager
+    def review_lock(self, task_id):
+        key = int.from_bytes(hashlib.sha256(task_id.encode()).digest()[:8], "big", signed=True)
+        with self._connect() as conn:
+            acquired = conn.execute("SELECT pg_try_advisory_lock(%s) AS acquired", (key,)).fetchone()
+            conn.commit()
+            yield acquired["acquired"]
+
     def transition(self, task_id: str, event: TraceEvent) -> None:
         with self._connect() as conn:
             conn.execute("UPDATE tasks SET state=%s,updated_at=%s WHERE id=%s", (event.state.value, event.created_at, task_id))
@@ -150,10 +174,11 @@ class PostgresTaskStore:
                 (task_id, event.step, event.state.value, event.message, event.created_at),
             )
 
+    # 将任务置为成功，保存最终报告并追加结束轨迹。
     def succeed(self, task_id: str, report: ReviewReport, event: TraceEvent) -> None:
         with self._connect() as conn:
             conn.execute(
-                "UPDATE tasks SET state=%s,report_json=%s::jsonb,updated_at=%s WHERE id=%s",
+                "UPDATE tasks SET state=%s,report_json=%s::jsonb,updated_at=%s,error=NULL WHERE id=%s",
                 (TaskState.SUCCESS.value, json.dumps(report.to_dict(), ensure_ascii=False), event.created_at, task_id),
             )
             conn.execute(
@@ -161,6 +186,7 @@ class PostgresTaskStore:
                 (task_id, event.step, event.state.value, event.message, event.created_at),
             )
 
+    # 将任务置为失败，保存错误信息并追加失败轨迹。
     def fail(self, task_id: str, error: str, event: TraceEvent) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -172,6 +198,7 @@ class PostgresTaskStore:
                 (task_id, event.step, event.state.value, event.message, event.created_at),
             )
 
+    # 按任务标识及可选租户查询任务，解码输入、报告和附属执行记录。
     def get(self, task_id: str, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             query = "SELECT * FROM tasks WHERE id=%s"
@@ -205,6 +232,7 @@ class PostgresTaskStore:
             item["created_at"] = item["created_at"].isoformat()
         return value
 
+    # 追加一条角色间消息，记录发送方、接收方、消息类型和内容。
     def record_agent_message(self, task_id: str, message: Dict[str, Any]) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -215,6 +243,7 @@ class PostgresTaskStore:
                  json.dumps(message.get("content", {}), ensure_ascii=False), utc_now()),
             )
 
+    # 按记忆标识保存或更新内容及过期信息，返回规范化记录。
     def save_agent_memory(self, memory: Dict[str, Any]) -> Dict[str, Any]:
         with self._connect() as conn:
             row = conn.execute(
@@ -236,6 +265,7 @@ class PostgresTaskStore:
             ).fetchone()
         return self._memory_from_row(row)
 
+    # 在租户、仓库和作用域范围内查询记忆，并排除过期条目。
     def list_agent_memories(
         self, tenant_id: str, repository: str, scopes: tuple,
         limit: int = 100,
@@ -252,6 +282,7 @@ class PostgresTaskStore:
             ).fetchall()
         return [self._memory_from_row(row) for row in rows]
 
+    # 按提供的任务和作用域等条件删除记忆，返回删除数量。
     def delete_agent_memories(self, task_id: str = "", scope: str = "") -> int:
         clauses = []
         params = []
@@ -269,6 +300,7 @@ class PostgresTaskStore:
             )
             return cursor.rowcount
 
+    # 删除到期的记忆记录，避免过期观察参与后续召回。
     def purge_expired_agent_memories(self) -> int:
         with self._connect() as conn:
             cursor = conn.execute(
@@ -277,6 +309,7 @@ class PostgresTaskStore:
             )
             return cursor.rowcount
 
+    # 将数据库行中的 JSON 字段解码为记忆对象。
     @staticmethod
     def _memory_from_row(row) -> Dict[str, Any]:
         value = dict(row)
@@ -287,9 +320,12 @@ class PostgresTaskStore:
                 value[key] = value[key].isoformat()
         return value
 
+    # 按可选租户读取最近任务，限制返回数量供列表展示。
     def list_tasks(self, limit: int = 50, tenant_id: Optional[str] = None) -> list:
         with self._connect() as conn:
-            where = " WHERE tenant_id=%s" if tenant_id is not None else ""
+            where = " WHERE NOT (input_json ? 'job_type')"
+            if tenant_id is not None:
+                where += " AND tenant_id=%s"
             params = ([tenant_id] if tenant_id is not None else []) + [max(1, min(limit, 200))]
             rows = conn.execute(
                 "SELECT id,state,repository,pull_request,error,created_at,updated_at,tenant_id "
@@ -301,16 +337,29 @@ class PostgresTaskStore:
             value["updated_at"] = value["updated_at"].isoformat()
         return values
 
-    def record_failure_case(self, task_id: str, category: str, payload: Dict[str, Any]) -> None:
+    def interrupted_tasks(self):
+        with self._connect() as conn:
+            return [row["id"] for row in conn.execute(
+                "SELECT id FROM tasks WHERE state IN ('PENDING','PLANNING','EXECUTING','REVIEWING') "
+                "AND (input_json ? 'review_engine' OR input_json->>'job_type'='evolution') ORDER BY created_at"
+            ).fetchall()]
+
+    # 将审查反馈或执行错误保存为待处理案例，供后续演进消费。
+    def record_failure_case(
+        self, task_id: str, category: str, payload: Dict[str, Any],
+        skill_name: str = "llm-review",
+    ) -> None:
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO failure_cases(task_id,category,payload_json,created_at) VALUES (%s,%s,%s::jsonb,%s)",
-                (task_id, category, json.dumps(payload, ensure_ascii=False), utc_now()),
+                "INSERT INTO failure_cases(task_id,skill_name,category,payload_json,created_at) "
+                "VALUES (%s,%s,%s,%s::jsonb,%s)",
+                (task_id, skill_name, category, json.dumps(payload, ensure_ascii=False), utc_now()),
             )
 
+    # 按解决状态、租户和可选 Skill 查询反馈案例，避免跨租户或跨领域学习。
     def list_failure_cases(
         self, unresolved_only: bool = False, limit: int = 100,
-        tenant_id: Optional[str] = None,
+        tenant_id: Optional[str] = None, skill_name: Optional[str] = None,
     ) -> list:
         joins = " f"
         clauses = []
@@ -321,6 +370,9 @@ class PostgresTaskStore:
             params.append(tenant_id)
         if unresolved_only:
             clauses.append("f.resolved=FALSE")
+        if skill_name is not None:
+            clauses.append("f.skill_name=%s")
+            params.append(skill_name)
         where = " WHERE " + " AND ".join(clauses) if clauses else ""
         params.append(max(1, min(limit, 500)))
         with self._connect() as conn:
@@ -334,6 +386,7 @@ class PostgresTaskStore:
             value["created_at"] = value["created_at"].isoformat()
         return values
 
+    # 读取指定任务在给定租户范围内的反馈，供任务详情展示。
     def list_task_failure_cases(
         self, task_id: str, tenant_id: Optional[str] = None,
     ) -> list:
@@ -357,6 +410,7 @@ class PostgresTaskStore:
             value["created_at"] = value["created_at"].isoformat()
         return values
 
+    # 把已经用于成功演进的案例标记为已解决。
     def resolve_failure_cases(self, case_ids: list) -> None:
         ids = [int(value) for value in case_ids]
         if not ids:
@@ -364,6 +418,7 @@ class PostgresTaskStore:
         with self._connect() as conn:
             conn.execute("UPDATE failure_cases SET resolved=TRUE WHERE id=ANY(%s)", (ids,))
 
+    # 保存不可变评测案例；相同输入可幂等返回，冲突内容拒绝覆盖。
     def save_evaluation_case(
         self, name: str, split: str, diff: str, expected: list,
         source: str = "manual", active: bool = True,
@@ -391,6 +446,7 @@ class PostgresTaskStore:
         value["created_at"] = value["created_at"].isoformat()
         return value
 
+    # 按数据划分和启用状态读取案例，限制单次回放规模。
     def list_evaluation_cases(
         self, split: Optional[str] = None, active_only: bool = True, limit: int = 100,
     ) -> list:
@@ -414,6 +470,7 @@ class PostgresTaskStore:
             value["created_at"] = value["created_at"].isoformat()
         return values
 
+    # 保存提示词候选的基线、分数、门禁决策和复现信息。
     def save_evolution_run(self, run: Dict[str, Any]) -> Dict[str, Any]:
         with self._connect() as conn:
             conn.execute(
@@ -428,6 +485,7 @@ class PostgresTaskStore:
             )
         return run
 
+    # 读取最近的提示词演进记录，并解码指标详情。
     def list_evolution_runs(self, limit: int = 50) -> list:
         with self._connect() as conn:
             rows = conn.execute(
@@ -440,6 +498,7 @@ class PostgresTaskStore:
             value["created_at"] = value["created_at"].isoformat()
         return values
 
+    # 更新已有演进记录的决策与指标，补充结构化候选信息。
     def update_evolution_run(self, run_id: str, decision: str, metrics: Dict[str, Any]) -> bool:
         with self._connect() as conn:
             cursor = conn.execute(
@@ -448,6 +507,7 @@ class PostgresTaskStore:
             )
             return cursor.rowcount == 1
 
+    # 查找指定 Skill 当前启用的提示词版本。
     def get_active_skill_version(self, skill_name: str) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(
@@ -456,6 +516,7 @@ class PostgresTaskStore:
             ).fetchone()
         return dict(row) if row else None
 
+    # 为提示词分配版本号并保存，必要时替换同 Skill 的活动版本。
     def save_skill_version(self, skill_name: str, prompt: str, score: float, activate: bool = False) -> Dict[str, Any]:
         active = self.get_active_skill_version(skill_name)
         with self._connect() as conn:
@@ -474,10 +535,12 @@ class PostgresTaskStore:
             )
         return {"skill_name": skill_name, "version": version, "score": score, "active": activate}
 
+    # 列出指定 Skill 的提示词历史，供查看和回滚。
     def list_skill_versions(self, skill_name: str) -> list:
         with self._connect() as conn:
             return list(conn.execute("SELECT * FROM skill_versions WHERE skill_name=%s ORDER BY version DESC", (skill_name,)).fetchall())
 
+    # 确认目标版本存在后切换活动标记，避免激活不存在的版本。
     def activate_skill_version(self, skill_name: str, version: int) -> bool:
         with self._connect() as conn:
             exists = conn.execute("SELECT 1 FROM skill_versions WHERE skill_name=%s AND version=%s", (skill_name, version)).fetchone()
@@ -487,6 +550,7 @@ class PostgresTaskStore:
             conn.execute("UPDATE skill_versions SET active=TRUE WHERE skill_name=%s AND version=%s", (skill_name, version))
         return True
 
+    # 按租户和 Skill 保存完整制品及内容指纹，分配版本并可设为活动状态。
     def save_skill_artifact(
         self, skill_name: str, artifact: Dict[str, Any], score: float,
         activate: bool = False, tenant_id: str = "default",
@@ -522,6 +586,7 @@ class PostgresTaskStore:
             "artifact_sha256": artifact_sha256, "created_at": created_at,
         }
 
+    # 解码数据库中的 Skill 制品与附属元数据。
     @staticmethod
     def _decode_skill_artifact(row) -> Dict[str, Any]:
         value = dict(row)
@@ -531,6 +596,7 @@ class PostgresTaskStore:
             value["created_at"] = value["created_at"].isoformat()
         return value
 
+    # 读取指定租户、指定 Skill 的当前活动制品。
     def get_active_skill_artifact(
         self, skill_name: str, tenant_id: str = "default",
     ) -> Optional[Dict[str, Any]]:
@@ -541,6 +607,7 @@ class PostgresTaskStore:
             ).fetchone()
         return self._decode_skill_artifact(row) if row else None
 
+    # 列出当前租户已激活的全部 Skill 制品，供覆盖磁盘版本。
     def list_active_skill_artifacts(self, tenant_id: str = "default") -> list:
         with self._connect() as conn:
             rows = conn.execute(
@@ -549,6 +616,7 @@ class PostgresTaskStore:
             ).fetchall()
         return [self._decode_skill_artifact(row) for row in rows]
 
+    # 读取某租户中指定 Skill 的版本历史。
     def list_skill_artifact_versions(
         self, skill_name: str, tenant_id: str = "default",
     ) -> list:
@@ -559,6 +627,7 @@ class PostgresTaskStore:
             ).fetchall()
         return [self._decode_skill_artifact(row) for row in rows]
 
+    # 在租户范围内切换 Skill 活动制品，避免影响其他租户。
     def activate_skill_artifact(
         self, skill_name: str, version: int, tenant_id: str = "default",
     ) -> bool:
@@ -583,6 +652,7 @@ class PostgresTaskStore:
             )
         return True
 
+    # 保存制品演进的候选版本、对比指标和最终决策。
     def save_skill_evolution_run(self, run: Dict[str, Any]) -> Dict[str, Any]:
         with self._connect() as conn:
             conn.execute(
@@ -596,6 +666,7 @@ class PostgresTaskStore:
             )
         return run
 
+    # 按租户及筛选条件读取最近的制品演进记录。
     def list_skill_evolution_runs(
         self, limit: int = 50, tenant_id: Optional[str] = None,
     ) -> list:
@@ -617,6 +688,7 @@ class PostgresTaskStore:
             value["created_at"] = value["created_at"].isoformat()
         return values
 
+    # 独立保存原始 Diff，供异步执行和任务恢复读取。
     def save_task_payload(self, task_id: str, diff: str) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -625,6 +697,7 @@ class PostgresTaskStore:
                 (task_id, diff, utc_now()),
             )
 
+    # 合并任务输入元信息，保留未被本次更新覆盖的字段。
     def update_task_input(self, task_id: str, updates: Dict[str, Any]) -> None:
         with self._connect() as conn:
             row = conn.execute(
@@ -639,11 +712,13 @@ class PostgresTaskStore:
                 (json.dumps(value, ensure_ascii=False), utc_now(), task_id),
             )
 
+    # 读取原始 Diff；不存在时返回空值，由调用方决定是否重取或失败。
     def get_task_payload(self, task_id: str) -> Optional[str]:
         with self._connect() as conn:
             row = conn.execute("SELECT diff FROM task_payloads WHERE task_id=%s", (task_id,)).fetchone()
         return row["diff"] if row else None
 
+    # 按任务与节点写入输出、状态、尝试次数和错误，作为恢复依据。
     def save_checkpoint(
         self, task_id: str, node: str, state: Dict[str, Any], status: str = "completed",
         attempt: int = 1, error: str = "",
@@ -658,6 +733,7 @@ class PostgresTaskStore:
                  error[:2000] or None, utc_now()),
             )
 
+    # 读取任务的全部节点检查点，并还原保存的状态字典。
     def load_checkpoints(self, task_id: str) -> Dict[str, Dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute(
@@ -672,8 +748,9 @@ class PostgresTaskStore:
             result[item.pop("node")] = item
         return result
 
+    # 为符合条件的任务设置取消请求，由运行时在节点边界响应。
     def request_cancel(self, task_id: str, tenant_id: Optional[str] = None) -> bool:
-        query = "UPDATE tasks SET cancel_requested=TRUE,updated_at=%s WHERE id=%s"
+        query = "UPDATE tasks SET cancel_requested=TRUE,updated_at=%s WHERE id=%s AND state NOT IN ('SUCCESS','FAILED','CANCELLED')"
         params = [utc_now(), task_id]
         if tenant_id is not None:
             query += " AND tenant_id=%s"
@@ -682,6 +759,7 @@ class PostgresTaskStore:
             cursor = conn.execute(query, params)
             return cursor.rowcount > 0
 
+    # 读取任务是否已请求取消或已经进入取消状态。
     def is_cancelled(self, task_id: str) -> bool:
         with self._connect() as conn:
             row = conn.execute(
@@ -689,6 +767,7 @@ class PostgresTaskStore:
             ).fetchone()
         return bool(row and row["cancel_requested"])
 
+    # 记录取消终态并追加轨迹，使任务详情反映取消结果。
     def cancel(self, task_id: str, event: TraceEvent) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -701,6 +780,7 @@ class PostgresTaskStore:
                 (task_id, event.step, event.state.value, event.message, event.created_at),
             )
 
+    # 尝试占用 delivery ID 并绑定载荷指纹，识别重复事件及同 ID 内容冲突。
     def claim_webhook(
         self, delivery_id: str, tenant_id: str, event_type: str, payload_sha256: str,
     ) -> bool:
@@ -723,6 +803,7 @@ class PostgresTaskStore:
                 raise ValueError("delivery id was already used with a different payload")
             return False
 
+    # 将已处理的 Webhook 关联到任务，供重复投递返回已有任务标识。
     def complete_webhook(self, delivery_id: str, task_id: Optional[str]) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -730,6 +811,7 @@ class PostgresTaskStore:
                 (task_id, delivery_id),
             )
 
+    # 查询已接收事件记录，用于幂等响应和追踪任务。
     def get_webhook(self, delivery_id: str) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(
@@ -737,6 +819,7 @@ class PostgresTaskStore:
             ).fetchone()
         return dict(row) if row else None
 
+    # 创建用户及租户角色关系，已有同名用户保留原凭据。
     def create_user(
         self, user_id: str, username: str, password_hash: str,
         tenant_id: str, role: str,
@@ -754,6 +837,7 @@ class PostgresTaskStore:
                 (row["id"], tenant_id, role),
             )
 
+    # 按用户名读取账号状态、密码摘要及租户成员关系。
     def get_user(self, username: str) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(
@@ -769,6 +853,7 @@ class PostgresTaskStore:
         value["memberships"] = [dict(item) for item in memberships]
         return value
 
+    # 保存租户对仓库的访问授权及是否允许自动修复。
     def grant_repository(self, tenant_id: str, repository: str, auto_fix: bool = False) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -777,6 +862,7 @@ class PostgresTaskStore:
                 (tenant_id, repository, auto_fix),
             )
 
+    # 检查租户的仓库授权；修复场景额外检查自动修复开关。
     def repository_allowed(
         self, tenant_id: str, repository: str, require_auto_fix: bool = False,
     ) -> bool:
@@ -790,6 +876,7 @@ class PostgresTaskStore:
             ).fetchone()
         return True if total == 0 else bool(row and (not require_auto_fix or row["auto_fix"]))
 
+    # 追加管理操作审计记录，保留操作者、动作和目标上下文。
     def audit(
         self, tenant_id: str, actor: str, action: str, resource: str,
         detail: Optional[Dict[str, Any]] = None,
@@ -802,6 +889,7 @@ class PostgresTaskStore:
                  json.dumps(detail or {}, ensure_ascii=False), utc_now()),
             )
 
+    # 按租户读取最近审计记录，供管理员或审计员查看。
     def list_audit(self, tenant_id: str, limit: int = 100) -> list:
         with self._connect() as conn:
             rows = conn.execute(
@@ -812,6 +900,7 @@ class PostgresTaskStore:
         return [{**dict(row), "detail": row["detail_json"],
                  "created_at": row["created_at"].isoformat()} for row in rows]
 
+    # 保存某租户的 Skill 灰度比例、影子模式与错误预算配置。
     def save_deployment(self, tenant_id: str, skill_name: str, config: Dict[str, Any]) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -829,6 +918,7 @@ class PostgresTaskStore:
                  config.get("status", "running"), utc_now()),
             )
 
+    # 查询租户当前的 Skill 发布状态与累计统计。
     def get_deployment(self, tenant_id: str, skill_name: str) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute(
@@ -837,6 +927,7 @@ class PostgresTaskStore:
             ).fetchone()
         return dict(row) if row else None
 
+    # 累计指定发布分组的成功和失败，更新错误预算及回滚状态。
     def record_deployment_result(
         self, tenant_id: str, skill_name: str, failed: bool,
     ) -> Optional[Dict[str, Any]]:
@@ -859,6 +950,7 @@ class PostgresTaskStore:
                 value["status"] = "rolled_back"
         return value
 
+    # 按告警键保存告警，记录级别、描述及时间。
     def create_alert(
         self, tenant_id: str, alert_key: str, severity: str, message: str,
     ) -> None:
@@ -869,6 +961,7 @@ class PostgresTaskStore:
                 (tenant_id, alert_key, severity, message[:1000], utc_now(), utc_now()),
             )
 
+    # 读取租户范围内最近的持久化告警。
     def list_alerts(self, tenant_id: str, limit: int = 100) -> list:
         with self._connect() as conn:
             rows = conn.execute(
@@ -877,6 +970,7 @@ class PostgresTaskStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    # 保存 GitHub App 安装与租户之间的映射。
     def save_installation(
         self, installation_id: int, account_login: str, tenant_id: str = "default"
     ) -> None:
@@ -889,6 +983,7 @@ class PostgresTaskStore:
                 (installation_id, account_login, utc_now(), tenant_id),
             )
 
+    # 根据安装标识解析所属租户，供 Webhook 路由使用。
     def installation_tenant(self, installation_id: int) -> Optional[str]:
         with self._connect() as conn:
             row = conn.execute(
@@ -897,9 +992,12 @@ class PostgresTaskStore:
             ).fetchone()
         return row["tenant_id"] if row else None
 
+    # 汇总任务状态、近期结果及相关计数，供控制台与告警逻辑使用。
     def dashboard_stats(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         with self._connect() as conn:
-            where = " WHERE tenant_id=%s" if tenant_id is not None else ""
+            where = " WHERE NOT (input_json ? 'job_type')"
+            if tenant_id is not None:
+                where += " AND tenant_id=%s"
             params = (tenant_id,) if tenant_id is not None else ()
             row = conn.execute(
                 "SELECT COUNT(*) AS total,COUNT(*) FILTER(WHERE state='SUCCESS') AS success,"
@@ -932,6 +1030,7 @@ class PostgresTaskStore:
                 "unresolved_failure_cases": failures, "active_skill_versions": skills}
 
 
+# 根据数据库 URL 选择 PostgreSQL，否则使用本地 SQLite 文件。
 def create_store(database_url: str, sqlite_path: str):
     if database_url.startswith(("postgres://", "postgresql://")):
         return PostgresTaskStore(database_url)

@@ -1,3 +1,5 @@
+# 真实 PR 基准入口：复用多 Agent 评测脚本的参数与执行流程。
+
 """Validate a real PR dataset before wiring model-backed reviewer factories."""
 import argparse
 import json
@@ -12,6 +14,7 @@ from evoagent.evaluation_harness import load_jsonl  # noqa: E402
 from evoagent.evaluation_v2 import validate_real_dataset  # noqa: E402
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", help="Labelled public/historical PR JSONL")

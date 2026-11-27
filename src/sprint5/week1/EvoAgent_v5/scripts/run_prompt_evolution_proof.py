@@ -1,3 +1,5 @@
+# 提示词学习验证入口：加载固定案例，执行反馈演进并写出可复现报告。
+
 import argparse
 import os
 import sys
@@ -14,6 +16,7 @@ from evoagent.evolution_proof import (  # noqa: E402
 )
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run an auditable feedback-driven prompt evolution replay."

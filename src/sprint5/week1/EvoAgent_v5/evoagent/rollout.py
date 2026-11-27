@@ -1,12 +1,17 @@
+# 发布流量管理：按任务哈希稳定分配灰度流量，累计错误预算并在超标时触发回滚。
+
 """Deterministic canary and shadow assignment with automatic rollback."""
 import hashlib
 from typing import Dict, Optional
 
 
+# 管理灰度分桶、运行结果观察和错误预算回滚。
 class ReleaseManager:
+    # 绑定持久化存储，发布分桶和错误预算状态均通过该接口读写。
     def __init__(self, store):
         self.store = store
 
+    # 校验灰度比例和错误预算后，保存指定租户的发布配置。
     def configure(self, tenant_id: str, skill_name: str, config: Dict[str, object]) -> dict:
         canary = int(config.get("canary_percent", 0))
         shadow = int(config.get("shadow_percent", 0))
@@ -17,6 +22,7 @@ class ReleaseManager:
         self.store.save_deployment(tenant_id, skill_name, config)
         return self.store.get_deployment(tenant_id, skill_name)
 
+    # 用任务哈希进行稳定分桶，决定走稳定版本还是灰度版本并返回影子标志。
     def assignment(self, tenant_id: str, skill_name: str, key: str) -> Dict[str, object]:
         deployment = self.store.get_deployment(tenant_id, skill_name)
         if not deployment or deployment["status"] != "running":
@@ -30,6 +36,7 @@ class ReleaseManager:
             "deployment": deployment,
         }
 
+    # 仅灰度流量累计发布错误预算；稳定流量直接返回当前发布状态。
     def observe(
         self, tenant_id: str, skill_name: str, failed: bool,
         lane: str = "canary",
@@ -44,6 +51,7 @@ class ReleaseManager:
             )
         return result
 
+    # 记录影子与稳定版本的比较结果，为发布评估提供观察数据。
     def observe_shadow(
         self, tenant_id: str, skill_name: str, task_id: str, lane: str,
         primary: Dict[str, object], candidate: Optional[Dict[str, object]],

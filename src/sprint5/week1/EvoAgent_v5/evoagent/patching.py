@@ -1,3 +1,5 @@
+# 统一补丁修复：校验路径与上下文，应用模型补丁，对比修复前后检查结果，再创建 Draft PR。
+
 """LLM unified-patch generation with structural and sandbox verification."""
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,6 +19,7 @@ behavior except for the defect. Return JSON only: {"patch":"--- a/path\n+++ b/pa
 insufficient, return {"patch":"","reason":"..."}."""
 
 
+# 补丁中的一个变更块，记录新旧行区间及块内操作。
 @dataclass
 class Hunk:
     old_start: int
@@ -26,6 +29,7 @@ class Hunk:
     lines: List[str]
 
 
+# 一个文件的补丁描述，包含路径和按顺序应用的变更块。
 @dataclass
 class FilePatch:
     path: str
@@ -35,6 +39,7 @@ class FilePatch:
 HUNK_HEADER = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
+# 解析模型返回的补丁，校验文件路径、块头及支持的变更类型。
 def parse_unified_patch(value: str, allowed_paths: List[str]) -> List[FilePatch]:
     lines = value.replace("\r\n", "\n").splitlines()
     patches: List[FilePatch] = []
@@ -96,6 +101,7 @@ def parse_unified_patch(value: str, allowed_paths: List[str]) -> List[FilePatch]
     return patches
 
 
+# 逐块核对原文件上下文后应用增删行，上下文不匹配则拒绝补丁。
 def apply_file_patch(content: str, patch: FilePatch) -> str:
     source = content.replace("\r\n", "\n").splitlines()
     output = []
@@ -121,11 +127,14 @@ def apply_file_patch(content: str, patch: FilePatch) -> str:
     return "\n".join(output) + trailing
 
 
+# 先生成并验证统一补丁，再提交修复的模型修复器。
 class VerifiedPatchFixer:
+    # 绑定补丁生成模型与验证器，将生成和放行检查保持为独立步骤。
     def __init__(self, client: JsonChatClient, verifier: RepairVerifier):
         self.client = client
         self.verifier = verifier
 
+    # 请求模型生成补丁，核对上下文并验证修复前后结果，通过后原子提交并创建 Draft PR。
     def create_fix_commits(
         self, client, repository: str, pull_request: int, report: dict,
     ) -> dict:
@@ -225,7 +234,9 @@ class VerifiedPatchFixer:
         }
 
 
+# 模型不可用时提供建议结果，维持修复接口契约。
 class SuggestionOnlyFixer:
+    # 未配置模型时只返回建议，不生成可提交的自动补丁。
     def create_fix_commits(self, client, repository, pull_request, report):
         return {
             "status": "suggestion-only", "branch": None, "commits": [],

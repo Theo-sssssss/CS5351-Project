@@ -1,3 +1,5 @@
+# 执行账本：线程安全地记录模型调用、工具调用、角色轨迹与估算费用，供报告和恢复使用。
+
 """Per-review accounting for real model/tool calls and complete agent traces."""
 from dataclasses import asdict, dataclass, field
 import threading
@@ -5,6 +7,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 
+# 一次模型调用的用量、耗时与状态记录。
 @dataclass
 class ModelCall:
     role: str
@@ -18,6 +21,7 @@ class ModelCall:
     error: str = ""
 
 
+# 一次工具调用的角色、工具名、耗时与状态记录。
 @dataclass
 class ToolCall:
     role: str
@@ -29,7 +33,9 @@ class ToolCall:
     error: str = ""
 
 
+# 本次审查的调用和事件账本，支持汇总与检查点恢复。
 class ExecutionLedger:
+    # 保存运行模式和 Token 单价，初始化受锁保护的模型、工具与事件记录。
     def __init__(
         self, mode: str, input_cost_per_million: float = 0.0,
         output_cost_per_million: float = 0.0,
@@ -43,6 +49,7 @@ class ExecutionLedger:
         self.agent_traces: Dict[str, List[Dict[str, Any]]] = {}
         self._lock = threading.Lock()
 
+    # 按输入与输出 Token 单价估算费用，供运行报告使用。
     def estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
         return round(
             input_tokens * self.input_cost_per_million / 1_000_000
@@ -50,6 +57,7 @@ class ExecutionLedger:
             8,
         )
 
+    # 记录一次模型请求的 Token、耗时、状态和估算费用。
     def record_model(
         self, role: str, provider: str, model: str, usage: Dict[str, Any],
         duration_ms: int, ok: bool = True, error: str = "",
@@ -68,6 +76,7 @@ class ExecutionLedger:
         with self._lock:
             self.model_calls.append(call)
 
+    # 记录工具名、角色、耗时及执行状态，便于检查工具调用路径。
     def record_tool(
         self, role: str, tool: str, arguments: Dict[str, Any], ok: bool,
         duration_ms: int, result: Any = "", error: str = "",
@@ -80,6 +89,7 @@ class ExecutionLedger:
         with self._lock:
             self.tool_calls.append(call)
 
+    # 为角色追加带时间和详情的事件，形成可追踪的执行过程。
     def trace(self, role: str, event: str, **detail) -> None:
         item = {
             "sequence": 0, "event": event,
@@ -90,6 +100,7 @@ class ExecutionLedger:
             item["sequence"] = len(values) + 1
             values.append(item)
 
+    # 从保存的账本重建模型、工具和事件记录，恢复后继续累计调用用量。
     def restore(self, summary: Dict[str, Any]) -> None:
         """Restore a checkpointed ledger before resuming an agentic session."""
         models = [
@@ -110,6 +121,7 @@ class ExecutionLedger:
             self.tool_calls = tools
             self.agent_traces = traces
 
+    # 汇总调用量、Token、费用、耗时与轨迹，形成报告中的执行统计。
     def summary(self, include_trace: bool = True) -> Dict[str, Any]:
         with self._lock:
             models = [asdict(item) for item in self.model_calls]

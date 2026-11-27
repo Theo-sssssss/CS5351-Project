@@ -1,3 +1,5 @@
+# Skill 学习实验入口：选择模型、静态制品和数据集，运行学习与消融对照。
+
 """Run experiment three with static, evolved and random-feedback Skill arms."""
 import argparse
 import json
@@ -20,6 +22,7 @@ from evoagent.skill_evolution import (  # noqa: E402
 )
 
 
+# 读取静态 Skill 制品，作为演进实验中保持不变的对照组。
 def load_static_artifact(path, skill_name):
     if not path:
         return SkillEvolutionEngine.empty_artifact(skill_name)
@@ -31,6 +34,7 @@ def load_static_artifact(path, skill_name):
     return validate_artifact(value, skill_name)
 
 
+# 解析命令行参数，准备本脚本所需输入，执行实验或导入并写出结果。
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
@@ -78,6 +82,7 @@ def main() -> None:
     per_role_tokens = max(256, args.token_budget // 4)
     per_role_seconds = max(1, args.time_budget // 4)
 
+    # 按当前制品和模型配置创建独立回放审查器。
     def reviewer_factory(artifact):
         return AgentSkillReplayReviewer(
             artifact, client, per_role_tokens, per_role_seconds,
