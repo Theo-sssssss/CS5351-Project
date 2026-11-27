@@ -1,5 +1,7 @@
 # EvoAgent Sprint 3 Records
 
+Group 04. Team name: **group**. Documentation updated on 28 November 2026; the completed Review and Retrospective remain dated 27 November.
+
 Period: 9–30 November 2026, course Weeks 10–13.
 
 Participants: Jiexuan Shen, Jiayu Zhu, Siye Tu, Tianyi Jiang, Jianyu Zhou, and Xinyu Zhang.
@@ -7,6 +9,16 @@ Participants: Jiexuan Shen, Jiayu Zhu, Siye Tu, Tianyi Jiang, Jianyu Zhou, and X
 Planning: 9 November 2026. Review and Retrospective completion account: 27 November 2026, as specified by the team. The Sprint closes on 30 November.
 
 Status at the team-specified 27 November reporting checkpoint: documented development scope completed and accepted against the archived verification evidence. The participants are listed above. This account incorporates team confirmation and source inspection. See the [completed V5 record](V5-Sprint-Backlog-Review-Retrospective.md) for task-level evidence.
+
+## Weekly calendar evidence
+
+| Course week | Scheduled date | Screenshot |
+| --- | --- | --- |
+| Week 10 | 2026-11-13 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/09_Week10_11%E6%9C%8813%E6%97%A5.jpg) |
+| Week 11 | 2026-11-20 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/10_Week11_11%E6%9C%8820%E6%97%A5.jpg) |
+| Week 12 | 2026-11-27 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/11_Week12_11%E6%9C%8827%E6%97%A5.jpg) |
+
+The [Week 13 / 4 December appointment](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/12_Week13_12%E6%9C%884%E6%97%A5.jpg) is outside the stated 9–30 November Sprint period. Screenshots establish scheduled entries, while the team separately confirmed attendance and the 27 November completion account.
 
 ## Sprint Planning
 
@@ -44,10 +56,11 @@ Reporting date: 27 November 2026. The team accepted the documented prototype sco
 | Restored V4 adaptive review | 21 November 2026 | [7a866fa](https://github.com/Theo-sssssss/CS5351-Project/commit/7a866faddaca3d715b987a1325bf7f2a7772ca5d) on `main` |
 | Final-delivery integration snapshot | 21 November 2026 | [b9a63e3](https://github.com/Theo-sssssss/CS5351-Project/commit/b9a63e3097635cc5d6f6bad14b82732da43dba02) on `codex/evoagent-final-delivery` |
 | Restored V5 controlled evolution | 23 November 2026 | [faf93a1](https://github.com/Theo-sssssss/CS5351-Project/commit/faf93a111f24bff749a8dc1c26c9aa56bddf2b88) on `main` |
+| Verified V5 delivery refresh | 28 November 2026 | [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5) on `main` |
 
 V4 and V5 are restored snapshots containing shared infrastructure. Attribute their intended increments using their `VERSION_SCOPE.md` files rather than treating every included module as newly developed in that version.
 
-The team previously selected [src/final/EvoAgent on codex/evoagent-final-delivery](https://github.com/Theo-sssssss/CS5351-Project/tree/codex/evoagent-final-delivery/src/final/EvoAgent) as the final submission source. The inspected commit is `b9a63e3097635cc5d6f6bad14b82732da43dba02`. This was the selected baseline and does not relabel the snapshot as V6. The user-supplied 27 November refresh is now the current local source archive, with 99 files and 89 passing regression tests. Its identity is in `../evidence/release/current-delivery-update.json`; the source revision is `e48ee634b7f609a89f761adc8b7a516cb8fcba31` on `main`.
+The current source is [V5 at e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5). Its 99 source files match the tested archive; two repository description files sit alongside them. The earlier `b9a63e3` delivery and `faf93a1` V5 snapshot are historical references. Publishing the refresh on 28 November does not change the team's 27 November Review date.
 
 ### Technical results
 
@@ -57,15 +70,22 @@ The final snapshot adds batch coverage, budget pause and resume, report confirma
 
 ### Evaluation results
 
-The 100-case controlled offline experiment reported F1 of 90.41% for both the full workflow and the workflow with an evolved Skill. It did not demonstrate a Skill improvement. A separate 130-case Prompt replay improved fixture validation and holdout F1 from 66.67% to 100%, while the production provenance gate blocked activation. Neither experiment establishes live PR accuracy.
+The 27 November current-source rerun used the fixed 100-case synthetic corpus and simulated model clients, with no real LLM calls.
 
-A frozen public documentation PR was also reviewed using a real model. The batched engine completed in 27.415 seconds, used 9,262 recorded tokens, and covered one of one batches. The legacy engine exceeded its task execution budget after 45.876 seconds of client elapsed time. There was no independent ground truth, so this pilot establishes a recorded execution outcome rather than a comparative accuracy or general reliability result.
+| Full workflow | Cases | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| Aggregate: train + validation + holdout | 100 | 100.00% | 82.50% | 90.41% |
+| Independent held-out subset | 20 | 100.00% | 62.50% | 76.92% |
+
+The evolved Skill matched the full workflow: zero holdout F1 gain. The separate 130-case prompt replay improved fixture F1 from 66.67% to 100%; production activation remained blocked by data provenance despite numerical success. The [raw rerun and metadata](../evidence/evaluation/current-source-20261127/README.md) preserve the source/dataset hashes, commands and scope.
+
+The archived real-model pilot processed one frozen, unlabelled documentation PR. Batched execution completed in 27.415 seconds with 9,262 recorded tokens; legacy execution exceeded its budget after 45.876 seconds. That pilot was not rerun and does not estimate review precision, recall or general reliability.
 
 ### Review verification and acceptance
 
 The team confirmed completion of the allocated V5 work. V5 regression passed 70 tests. The current-source regression passed 89 tests. The archived deterministic runtime trace recorded `PASS`: budget pause with 2/12 batches complete, resume to 12/12 and confirmation of the resulting report revision. The Skill and Prompt experiments verified the rejection and provenance controls for the recorded cases. The detailed scope, owners and source references are in the [completed V5 record](V5-Sprint-Backlog-Review-Retrospective.md).
 
-The selected delivery snapshot `b9a63e3` was accepted for the documented prototype scope. The team retained the null Skill result, the blocked production activation and the single-PR pilot limits in the handoff. Presentation rehearsal, official submission remain delivery activities.
+The 27 November team confirmation accepts the documented prototype scope. The refreshed source is identified above, with its own current regression and offline-rerun records. The team retained the null Skill result, the blocked production activation and the single-PR pilot limits in the handoff. Report revision/upload, presentation rehearsal and official submission remain delivery activities. The report PDF and LaTeX source are intentionally not pushed.
 
 ## Completed Sprint Retrospective
 
@@ -75,10 +95,6 @@ The main lessons were to package evaluation fixtures with the source, retain neg
 
 The adopted delivery follow-up is presentation rehearsal, confirmation of official submission access and deadlines. The development completion record and delivery follow-up are dated to the team's specified reporting checkpoint.
 
-## Current-source offline rerun — 27 November 2026
+## Current member completion record
 
-A separate execution from the refreshed 99-file source archive reproduced the controlled fixture metrics: full-workflow aggregate precision/recall/F1 100.00% / 82.50% / 90.41%; held-out precision/recall/F1 100.00% / 62.50% / 76.92%. The evolved Skill gave zero matched holdout gain. The separate 130-case prompt replay also reproduced its metrics and production activation block. These no-LLM results are in `../evidence/evaluation/current-source-20261127/`. The historical increment records and single real-PR pilot remain attributed to their original inputs.
-
-## Current uploaded-source identity
-
-The verified refreshed source is [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5). The report PDF and LaTeX source are intentionally withheld from this upload. Historical increment links above retain their historical scope.
+The [V5 contribution table](Contribution-Traceability.md) links each member's completed V5 task to source/tests and confirmed actual hours: Siye Tu 8 h, Jianyu Zhou 6 h, Xinyu Zhang 4 h, Tianyi Jiang 6 h, Jiayu Zhu 7 h and Jiexuan Shen 5 h (36 V5 hours). All members total 36 h each across V1–V5. Technical reruns validate the product and are distinct from individual authorship evidence.

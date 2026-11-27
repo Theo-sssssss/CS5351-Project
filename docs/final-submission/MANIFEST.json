@@ -252,33 +252,33 @@
     },
     {
       "path": "process/Contribution-Traceability.md",
-      "bytes": 6170,
-      "sha256": "d90d3e8db0c031269e243b8d15797a9b8826ff5d7d3c46a74110fa97f222863b"
+      "bytes": 9658,
+      "sha256": "4d94c21e84915970ae4dedcd694cb3dd55d39c9cd497784edf5c2412ad23c94f"
     },
     {
       "path": "process/Evidence-Index.md",
-      "bytes": 6062,
-      "sha256": "956433e40ff73e08f264e5759628defd01a6110d96db645f4e1f0a91ff30d186"
+      "bytes": 6714,
+      "sha256": "b4da70591fb662a68bbf5b1950e9433645221193afb865de6d34d6f529282bad"
     },
     {
       "path": "process/README.md",
-      "bytes": 6095,
-      "sha256": "ba5c679a8671d2f74adc0705ceb6dee353c20e5d8cb03f55ca2cfde1344eac74"
+      "bytes": 4855,
+      "sha256": "035fb876ac70ef6e7ee0a7913597ca13428adcdcc9ca05a2c3a1730b27c9d752"
     },
     {
       "path": "process/Sprint-1-Records.md",
-      "bytes": 7443,
-      "sha256": "dcce2464c8bbfc6d51dc68c1d4f2f52d5d29d4d62179bac46276904a3b42a978"
+      "bytes": 10055,
+      "sha256": "695bbca608c8d0ea29ac26e62a81a9c1dc5c370b03203af810647bd6b7d74c24"
     },
     {
       "path": "process/Sprint-2-Records.md",
-      "bytes": 8119,
-      "sha256": "a8c2e0daf917d640c24f6e5202a3e3ceb5799cf915427126339e64fc7f535902"
+      "bytes": 10760,
+      "sha256": "385c171874e359792e3fff7fef2e8b9a4306eeb984d8ce8c7362a0ffc5d08aba"
     },
     {
       "path": "process/Sprint-3-Records.md",
-      "bytes": 8589,
-      "sha256": "05ba154e27dcbc5f06b415dc81e17f630ab684336988e029d45c9efad8da683b"
+      "bytes": 9645,
+      "sha256": "7fc0f4b0f4cc692dac0dd8f94a02a8e7b2ff6a3a70ea55027e6957e738fd6041"
     },
     {
       "path": "process/V5-Sprint-Backlog-Review-Retrospective.md",
@@ -315,5 +315,6 @@
       "bytes": 60401,
       "sha256": "aadab249bfe088f500b388c671377811ee4e02f95d9803d33a44b76897898916"
     }
-  ]
+  ],
+  "process_records_updated_on": "2026-11-28"
 }

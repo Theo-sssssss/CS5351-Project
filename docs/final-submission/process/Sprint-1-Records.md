@@ -1,5 +1,7 @@
 # EvoAgent Sprint 1 Records
 
+Group 04. Team name: **group**. Documentation updated on 28 November 2026. The ceremony dates below remain historical.
+
 Period: 7 September–4 October 2026, course Weeks 2–5.
 
 Participants: Jiexuan Shen, Jiayu Zhu, Siye Tu, Tianyi Jiang, Jianyu Zhou, and Xinyu Zhang.
@@ -9,6 +11,17 @@ Planning: 7 September 2026. Review and Retrospective: 2 October 2026. Dates supp
 Status: finalized reconstructed Planning and Retrospective account with an evidence-based technical Review. Unrecorded historical decisions and formal acceptance are not established by the available evidence.
 
 The team confirmed all six members attended the meetings already held. The technical discussion below is reconstructed from version evidence. Formal acceptance and adopted actions remain unverified.
+
+## Weekly calendar evidence
+
+| Course week | Scheduled date | Screenshot |
+| --- | --- | --- |
+| Week 02 | 2026-09-11 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/01_Week02_9%E6%9C%8811%E6%97%A5.jpg) |
+| Week 03 | 2026-09-18 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/02_Week03_9%E6%9C%8818%E6%97%A5.jpg) |
+| Week 04 | 2026-09-25 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/03_Week04_9%E6%9C%8825%E6%97%A5.jpg) |
+| Week 05 | 2026-10-02 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/04_Week05_10%E6%9C%882%E6%97%A5.jpg) |
+
+These screenshots record scheduled entries. The team separately confirmed attendance; original meeting votes, live demonstrations and sign-offs are not reconstructed from calendar images.
 
 ## Sprint Planning
 
@@ -55,7 +68,7 @@ V1 implements the submission-to-report workflow, SQLite task storage, a minimal 
 
 ### Reconstructed technical discussion for 2 October
 
-| Topic | What the available work showed | Follow-up to confirm |
+| Topic | What the available work showed | Verification focus and later work |
 | --- | --- | --- |
 | Intake and configuration | V1 established a local service and dashboard. The backlog separated environment configuration, URL validation, PR metadata and diff retrieval. Untracked credentials and database files were part of the setup boundary. | Verify a valid URL and an invalid URL against the same local release and record the observed task responses. |
 | One-pass review | A submitted change flowed into a background task, one configured model call and a structured report. The task lifecycle and HTTP status were visible independently of the report. | Preserve V1 as the baseline and retain a frozen diff for the next comparison. |
@@ -68,7 +81,7 @@ The October discussion is reconstructed from the V1 repository and backlog. The 
 
 The handoff archive records two V1 tests passing in a retrospective regression on 21 November. This supports the archived snapshot's tested parsing behavior; it does not date Sprint 1 acceptance or prove live GitHub and LLM integration at that time.
 
-The baseline meets the implemented workflow scope. The team should record a live PR, configuration, expected result, observed result, and reviewer before signing off end-to-end acceptance. Historical formal acceptance outcome: not established by the retained evidence.
+The retained V1 evidence does not include a dated live PR, configuration, expected/observed result and reviewer sign-off for end-to-end acceptance. Later integration verification does not date Sprint 1 acceptance. Historical formal acceptance outcome: not established by the retained evidence.
 
 ### Carry-forward work
 
@@ -86,13 +99,19 @@ A small executable baseline made the interfaces between PR input, model output, 
 
 One model response has no independent challenge step. The initial tests cover parsing rather than review quality or the complete live workflow. Structured output alone cannot establish that a reported defect is valid.
 
-### Proposed improvement actions
+### Retrospective lessons and subsequent implementation
 
-| Action | Proposed owner | Target | Completion criterion |
-| --- | --- | --- | --- |
-| Add Lead, specialist Workers, Critic, and final synthesis | Siye Tu | Sprint 2 | Role stages and their outputs are traceable. |
-| Add diff-location and evidence rejection tests | Xinyu Zhang | Sprint 2 | Unknown paths, non-added lines, and mismatched quotations are rejected. |
-| Record role-level calls, tokens, and states | Jiexuan Shen | Sprint 2 | A report can be traced to all participating stages. |
-| Retain a reproducible baseline fixture and configuration | Jianyu Zhou | Sprint 2 | A frozen diff can be reused for a documented comparison. |
+The following outcomes describe later completed increments, not unrecorded decisions asserted to have been made at the 2 October meeting. Owners follow the team-confirmed version assignments.
 
-Historical meeting decisions and action acceptance: not established by the retained evidence.
+| Lesson from V1 | Later responsible contributors | Subsequent outcome and evidence |
+| --- | --- | --- |
+| Add an independent challenge step to one-pass review. | Jiexuan Shen and Siye Tu, V2 workflow and model integration | V2 introduced Lead, specialist, Critic and synthesis stages. The [V2 regression log](../evidence/regression/EvoAgent_v2-tests.txt) supports the recovered 33-test snapshot. |
+| Verify finding location and cited evidence. | Jianyu Zhou, V2 review-integrity assignments | Programmatic gates reject unsupported paths, locations and quotations; the current source retains evidence-gate tests. See [contribution traceability](Contribution-Traceability.md). |
+| Make role execution and failures inspectable. | Jiexuan Shen and Jianyu Zhou, workflow and reporting assignments | Role traces and structured reporting are retained in later versions. Current verification is indexed in [Evidence Index](Evidence-Index.md). |
+| Retain reproducible inputs and setup guidance. | Tianyi Jiang, QA and later reproducibility responsibility | The current delivery packages both offline fixture datasets, dependency records and a verified source archive. |
+
+The contemporaneous Sprint 1 formal acceptance decision remains unrecorded. The later implementation and verification outcomes above close the technical carry-forward scope without inventing a historical sign-off.
+
+## Current delivery cross-reference
+
+V1–V3 remain historical increment references. The refreshed V5 source is [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5), with 89 current-source regression passes and separately reported offline metrics. The [completed V5 record](V5-Sprint-Backlog-Review-Retrospective.md) and [V5 member contributions](Contribution-Traceability.md) document the final increment. The report remains local at the user's request.

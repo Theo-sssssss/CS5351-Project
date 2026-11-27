@@ -1,17 +1,35 @@
 # EvoAgent Repository and Evaluation Evidence
 
-Repository: [Theo-sssssss/CS5351-Project](https://github.com/Theo-sssssss/CS5351-Project).
+Group 04. Team name: **group**. Updated on 28 November 2026.
 
-Remote Git refs and history were read over the local machine's existing SSH authentication on 23 November 2026. No remote changes were made.
+Repository: [Theo-sssssss/CS5351-Project](https://github.com/Theo-sssssss/CS5351-Project). The checkpoints below identify fixed artifacts; a source commit is not presented as the moving head of `main`.
 
-## Observed branch heads
+## Current published checkpoints
 
-| Branch | Commit | Meaning |
+| Evidence | Fixed revision / file | Scope |
 | --- | --- | --- |
-| `main` | `faf93a111f24bff749a8dc1c26c9aa56bddf2b88` | V5 source upload |
-| `codex/evoagent-final-delivery` | `b9a63e3097635cc5d6f6bad14b82732da43dba02` | Previous delivery baseline at `src/final/EvoAgent` |
+| Verified V5 source | [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5) | 99 source files matching the tested archive, plus two repository description files |
+| Non-report delivery files | [61c6b2f](https://github.com/Theo-sssssss/CS5351-Project/tree/61c6b2f6861dd72fc2c20bf7df3aedbc1aef7086/docs/final-submission) | Completed V5 records, presentation, demo, source archive and verification outputs |
+| Weekly screenshots | [ea1c3e7](https://github.com/Theo-sssssss/CS5351-Project/tree/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence) | 12 original calendar screenshots and file checksums |
+| Current source identity | [Release identity](../evidence/release/current-delivery-update.json) | Source hashes and uploaded source revision |
+| Current regression | [Run record](../evidence/release/latest-source-test-run.json), [full log](../evidence/release/latest-source-tests.txt), [dependencies](../evidence/release/latest-source-dependencies.txt) | 89 passes, zero failures/errors; Python 3.11.5; fresh archive extraction using an existing dependency environment |
+| Current offline comparison | [Summary](../evidence/evaluation/current-source-20261127/README.md), [raw JSON](../evidence/evaluation/current-source-20261127/controlled-evaluation.json), [run metadata](../evidence/evaluation/current-source-20261127/run-metadata.json) | Fixed synthetic data, source/dataset hashes, seed and commands; no real LLM calls |
+| Prompt replay | [Raw replay](../evidence/evaluation/current-source-20261127/prompt-evolution-proof.json) | Separate 130-case fixture; numerical success and production activation decision are distinct |
 
-The team originally selected [this delivery baseline](https://github.com/Theo-sssssss/CS5351-Project/tree/codex/evoagent-final-delivery/src/final/EvoAgent). V5 on `main` is retained as an incremental version reference. The user-supplied 27 November refresh supersedes the local delivery baseline. The current archive, 99-file inventory and 89-test regression are identified in `../evidence/release/current-delivery-update.json` and `../evidence/release/latest-source-test-run.json`; its source is recorded at commit `e48ee634b7f609a89f761adc8b7a516cb8fcba31` on `main`.
+## Current-source metrics
+
+| Full-workflow measurement | Cases | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| Aggregate: train + validation + holdout | 100 | 100.00% | 82.50% | 90.41% |
+| Held-out subset | 20 | 100.00% | 62.50% | 76.92% |
+
+The full workflow with an evolved Skill has the same scores: zero matched holdout F1 gain. The repository-disjoint split is 60/20/20. The separate Skill-policy comparison and prompt replay are described in the current summary and must not be pooled with these scores. Prompt replay improved fixture F1 from 66.67% to 100% while production activation remained blocked by provenance. Its isolated offline `activated` decision does not mean production publication.
+
+## Historical runtime and model evidence
+
+The [deterministic trace](../evidence/evaluation/demo-trace.json) records budget pause at 2/12 batches, resume to 12/12, and report revision confirmation. It is an archived fixture walkthrough. Current batching behavior also has regression coverage in the 89-test source. The supplied MP4 is a separate artifact; its content and execution mode were not inferred from that trace because video inspection was waived.
+
+The [paired public-PR pilot](../evidence/evaluation/paired-pilot.json) and [batched result](../evidence/evaluation/arm-batched.json) retain the original frozen input: one unlabelled documentation PR. The batched run completed in 27.415 seconds using 9,262 recorded tokens; the legacy path exceeded its budget after 45.876 seconds. No new pilot was run during the current offline rerun, and these observations do not estimate real-world precision or recall.
 
 ## Increment references
 
@@ -23,20 +41,12 @@ The team originally selected [this delivery baseline](https://github.com/Theo-ss
 | V3 | 7 November 2026 | [aefe1f7](https://github.com/Theo-sssssss/CS5351-Project/commit/aefe1f741cebf4e840b76726c84be5668a476c1d) | `src/sprint3/week1/EvoAgent_v3` |
 | V4 restored snapshot | 21 November 2026 | [7a866fa](https://github.com/Theo-sssssss/CS5351-Project/commit/7a866faddaca3d715b987a1325bf7f2a7772ca5d) | `src/sprint4/week1/EvoAgent_v4` |
 | Final-delivery snapshot | 21 November 2026 | [b9a63e3](https://github.com/Theo-sssssss/CS5351-Project/commit/b9a63e3097635cc5d6f6bad14b82732da43dba02) | `src/final/EvoAgent` on the delivery branch |
-| V5 restored snapshot | 23 November 2026 | [faf93a1](https://github.com/Theo-sssssss/CS5351-Project/commit/faf93a111f24bff749a8dc1c26c9aa56bddf2b88) | `src/sprint5/week1/EvoAgent_v5` |
+| V5 original restored snapshot | 23 November 2026 | [faf93a1](https://github.com/Theo-sssssss/CS5351-Project/commit/faf93a111f24bff749a8dc1c26c9aa56bddf2b88) | `src/sprint5/week1/EvoAgent_v5` |
+| V5 verified refresh | 28 November 2026 | [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/commit/e48ee634b7f609a89f761adc8b7a516cb8fcba31) | `src/sprint5/week1/EvoAgent_v5` |
 
-## Scope and evaluation references
+## Weekly discussion evidence
 
-- [V4 scope at the inspected commit](https://github.com/Theo-sssssss/CS5351-Project/blob/7a866faddaca3d715b987a1325bf7f2a7772ca5d/src/sprint4/week1/EvoAgent_v4/VERSION_SCOPE.md): adaptive context, scoped memory, and declarative Skills; restored source also includes later infrastructure.
-- [V5 scope at the inspected commit](https://github.com/Theo-sssssss/CS5351-Project/blob/faf93a111f24bff749a8dc1c26c9aa56bddf2b88/src/sprint5/week1/EvoAgent_v5/VERSION_SCOPE.md): controlled Skill evolution and maintenance checks.
-- [V5 evaluation results](https://github.com/Theo-sssssss/CS5351-Project/blob/faf93a111f24bff749a8dc1c26c9aa56bddf2b88/src/sprint5/week1/EvoAgent_v5/EVALUATION_RESULTS.md): offline fixture results, negative Skill comparison, and blocked production activation.
-- [Final-delivery README](https://github.com/Theo-sssssss/CS5351-Project/blob/b9a63e3097635cc5d6f6bad14b82732da43dba02/src/final/EvoAgent/README.md): batch review, budget recovery, report confirmation, and version workbench.
-
-The supplied handoff archive provides `scrum-records/evidence/*-tests.txt`, `scrum-records/evidence/test-runs.json`, `delivery/Release-Tests.txt`, and `delivery/evaluation/README.md`. Their logged regressions and live pilot outcomes are used in the Sprint records with their original scope and dates. Those archived logs retain their original scope. A separate 27 November run of the current extracted source passed 89 tests; the new log is retained alongside the historical records.
-
-The team supplied the Sprint calendar, six-member roster, and the milestone estimates 216, 186, 132, 72, 30, and 0 hours. The development period is Week 2 through Week 12; the earlier Week 11 endpoint is superseded. Scheduled meeting images supplement the calendar; they do not identify ceremony decisions or individual attendance.
-
-## Team-specified ceremony dates
+The [calendar screenshot index](https://github.com/Theo-sssssss/CS5351-Project/tree/main/docs/evidence) links all 12 originals from Week 02 through Week 13. The dated entries establish scheduled appointments, while the team separately confirmed attendance for meetings already held. Screenshots do not establish individual authorship or ceremony decisions. The 4 December entry is outside the stated Sprint 3 period.
 
 | Sprint | Planning | Review | Retrospective |
 | --- | --- | --- | --- |
@@ -44,12 +54,8 @@ The team supplied the Sprint calendar, six-member roster, and the milestone esti
 | 2 | 12 October 2026 | 6 November 2026 | 6 November 2026 |
 | 3 | 9 November 2026 | 27 November 2026 | 27 November 2026 |
 
-Sprint 3 explicitly uses 27 November, superseding the closing-week calculation of 4 December. Its formal period still ends on 30 November. The updated V5 and Sprint 3 records incorporate the team-confirmed completion account dated to the specified 27 November checkpoint. The V3 upload on 7 November occurred after the Sprint 2 Review on 6 November and is treated as Sprint-end follow-up rather than evidence of that Review's demonstration.
+The 27 November Sprint 3 checkpoint supersedes the earlier 4 December calculation; the formal Sprint period still ends on 30 November. V3's 7 November upload followed the 6 November Review and is recorded as Sprint-end follow-up.
 
-## Current-source offline rerun — 27 November 2026
+## Completion and contribution evidence
 
-A separate execution from the refreshed 99-file source archive reproduced the controlled fixture metrics: full-workflow aggregate precision/recall/F1 100.00% / 82.50% / 90.41%; held-out precision/recall/F1 100.00% / 62.50% / 76.92%. The evolved Skill gave zero matched holdout gain. The separate 130-case prompt replay also reproduced its metrics and production activation block. These no-LLM results are in `../evidence/evaluation/current-source-20261127/`. The historical increment records and single real-PR pilot remain attributed to their original inputs.
-
-## Current uploaded-source identity
-
-The verified refreshed source is [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5). The report PDF and LaTeX source are intentionally withheld from this upload. Historical increment links above retain their historical scope.
+Use the [completed V5 record](V5-Sprint-Backlog-Review-Retrospective.md) and [member allocation](Contribution-Traceability.md) together. Backlogs and team confirmation establish ownership and actual hours; source, tests and experiment outputs establish software behavior. Centralized uploads do not imply sole authorship. The report and personal report statements remain local and are not part of this push.
