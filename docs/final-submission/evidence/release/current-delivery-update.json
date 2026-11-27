@@ -1,8 +1,8 @@
 {
-  "updated_on": "2026-11-27",
+  "updated_on": "2026-11-28",
   "source_supplied": "EvoAgent 2",
   "previous_baseline_commit": "b9a63e3097635cc5d6f6bad14b82732da43dba02",
-  "current_github_commit": "e48ee634b7f609a89f761adc8b7a516cb8fcba31",
+  "current_github_commit": "ce27a3a5c85db15312a3bbf746d44754ca918b36",
   "file_count": 99,
   "changed_from_previous_delivery": [
     "evoagent/agentic_core.py",
@@ -23,7 +23,7 @@
     "Local SQLite databases and history backups",
     "Python caches and local dependency folders"
   ],
-  "regression_status": "PASS: 89 tests on 27 November 2026, Python 3.11.5, run from the extracted current source ZIP.",
+  "regression_status": "PASS: 89 tests on 28 November 2026, Python 3.11.5, from a fresh extraction of the English-documentation source ZIP.",
   "video": {
     "supplied_name": "10955_1795705522.mp4",
     "delivery_path": "submission/EvoAgent-Demo.mp4",
@@ -49,11 +49,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "066ca7372f4c0f579494e6fb7140f982a25143e2551dc610843f14d111dacb3b"
+      "sha256": "a042c8d9b48414f69a0480b7b4593712e5909c681a9d13e6b8f896a65e0e062f"
     },
     {
       "path": "RUN-LOCAL.md",
-      "sha256": "780178c827bbd27a329610da2f01cdccb87fd4782868168c23c392af8a698c93"
+      "sha256": "33679309b7306906ed6b77084e0764401a73266528e2a87549daa82019aa3499"
     },
     {
       "path": "docker-compose.yml",
@@ -446,5 +446,16 @@
     "execution_mode": "controlled-offline-no-llm"
   },
   "github_source_path": "src/sprint5/week1/EvoAgent_v5",
-  "github_source_url": "https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5"
+  "github_source_url": "https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5",
+  "source_archive_sha256": "5ef88f31ad45d58e2c55677379c65f2ca00d478a2eee8e839bbb42cce982f36e",
+  "documentation_refresh": {
+    "changed": [
+      "README.md",
+      "RUN-LOCAL.md"
+    ],
+    "unchanged_distributable_files": 97,
+    "executable_implementation_changed": false,
+    "previous_archive_sha256": "7ed1a3f93e55381feed827290da5bc00b46f605f88c2bbebe883702dd35d2abd",
+    "evaluation_note": "27 November evaluation outputs retain their measured source identity; all executable sources, configuration and fixtures remain byte-identical."
+  }
 }

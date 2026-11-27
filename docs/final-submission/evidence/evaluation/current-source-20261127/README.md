@@ -55,3 +55,7 @@ python scripts/run_prompt_evolution_proof.py --output-dir /path/to/fresh-output/
 ```
 
 Use a new prompt output directory because the proof run writes an immutable SQLite record. The temporary database is not distributed as application state. Raw JSON results and console logs are retained beside this summary. No benchmark labels, matching rules, thresholds or source files were edited for this rerun.
+
+## English documentation refresh — 28 November 2026
+
+The final source archive now has translated `README.md` and `RUN-LOCAL.md`. All other 97 distributable files, including implementation, configuration and experiment fixtures, match the measured 27 November archive byte for byte. Raw results and `run-metadata.json` retain the original measured archive identity. The documentation refresh passed a fresh 89-test regression; it does not introduce a new accuracy experiment.

@@ -1,14 +1,16 @@
-# Release evidence identities
+# Release Evidence Identities
 
-## Current local delivery — 27 November 2026
+## Current delivery — 28 November 2026
 
-- `current-delivery-update.json`: manifest of 99 current source files and the retained video identity.
-- `latest-source-test-run.json`: current source ZIP hash, Python environment, command and result (89 tests passed).
+The refreshed English-documentation source is commit `ce27a3a5c85db15312a3bbf746d44754ca918b36`. Its archive contains 99 distributable files. Only `README.md` and `RUN-LOCAL.md` differ from the 27 November tested archive; the other 97 files, including executable sources, configuration and evaluation fixtures, are byte-identical.
+
+- `current-delivery-update.json`: source-file fingerprints, documentation equivalence and the retained video identity.
+- `latest-source-test-run.json`: refreshed source ZIP hash, Python environment, command and 89-test passing result.
 - `latest-source-tests.txt`: full verbose output, including non-failing OpenTelemetry provider messages.
-- `latest-source-dependencies.txt`: packages in the Python environment used for this run.
+- `latest-source-dependencies.txt`: packages in the existing Python environment used for the run.
 
-The tests ran on a fresh extraction without a real `.env` or provider/GitHub environment overrides. This used an existing dependency environment, not a new dependency installation. A separate current-source controlled offline rerun is recorded in `../evaluation/current-source-20261127/`; no live-model accuracy or performance study was added. The updated source is commit `e48ee634b7f609a89f761adc8b7a516cb8fcba31` on `main`.
+The regression ran on a fresh extraction without a real `.env` or provider/GitHub environment overrides. This reused an existing dependency environment. The offline evaluations in `../evaluation/current-source-20261127/` retain their original measured archive hash. Their implementation and input files are unchanged; translation is not a new accuracy measurement. No new live-model result is claimed.
 
 ## Historical baseline
 
-Other archived release-verification files in this directory identify the earlier `b9a63e3` baseline. They are retained unchanged for provenance and do not describe the current refreshed archive. The current offline rerun is identified in `../evaluation/current-source-20261127/`; older evaluation and real-model pilot files retain their original source and input scope.
+Other archived release-verification files identify the earlier `b9a63e3` baseline and are retained unchanged for provenance. The archived real-model pilot also retains its original source and input scope.

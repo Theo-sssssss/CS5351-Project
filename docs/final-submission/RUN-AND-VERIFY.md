@@ -1,6 +1,6 @@
 # Run and Verify the Selected EvoAgent Source
 
-Use `submission/EvoAgent-Final-Source.zip`, rebuilt from the updated `EvoAgent 2` folder supplied on 27 November 2026. Current source hashes are recorded in `evidence/release/current-delivery-update.json`; the GitHub source commit is `e48ee634b7f609a89f761adc8b7a516cb8fcba31`. Extract it into a new working directory. The ZIP contains a root folder named `EvoAgent`.
+Use `submission/EvoAgent-Final-Source.zip`, rebuilt from the updated `EvoAgent 2` folder supplied on 27 November 2026. Current source hashes are recorded in `evidence/release/current-delivery-update.json`; the GitHub source commit is `ce27a3a5c85db15312a3bbf746d44754ca918b36`. Extract it into a new working directory. The ZIP contains a root folder named `EvoAgent`.
 
 ## Create an environment
 
@@ -34,7 +34,7 @@ On macOS or Linux:
 
 On Windows, substitute `.\.venv\Scripts\python.exe` for `.venv/bin/python`.
 
-The current source ZIP passed 89 tests on 27 November 2026 using Python 3.11.5 after extraction without a real `.env`. See `evidence/release/latest-source-tests.txt`, `latest-source-test-run.json` and `latest-source-dependencies.txt`. Repeated OpenTelemetry TracerProvider override messages were logged without test failures. Preserve the current run record and source identity for later verification.
+The current source ZIP passed 89 tests on 28 November 2026 using Python 3.11.5 after extraction without a real `.env`. See `evidence/release/latest-source-tests.txt`, `latest-source-test-run.json` and `latest-source-dependencies.txt`. Repeated OpenTelemetry TracerProvider override messages were logged without test failures. Preserve the current run record and source identity for later verification.
 
 ## Reproduce the current offline metrics
 
@@ -65,3 +65,7 @@ The report PDF and LaTeX source remain local and are intentionally excluded from
 ## Current presentation and demo status
 
 The current deck is `submission/EvoAgent-Presentation.pptx`, with a matching PDF and updated speaking notes. The earlier slide LaTeX source has been retired. The updated user-supplied demonstration is packaged as `submission/EvoAgent-Demo.mp4`. Video inspection was waived by the user. Presentation rehearsal remains a team delivery activity. Website translation to English is deferred at the user's request. See the process index in `process/README.md`.
+
+## English documentation refresh
+
+The 28 November archive translates only the two source setup documents. The remaining 97 distributable files are unchanged from the measured 27 November source. See the current release manifest and regression record for the refreshed archive identity; offline evaluation outputs preserve their original measured identities.

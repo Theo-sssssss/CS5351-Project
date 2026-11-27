@@ -1,7 +1,7 @@
 {
   "package": "Group 04 V5 repository delivery",
   "prepared_on": "2026-11-28",
-  "source_commit": "e48ee634b7f609a89f761adc8b7a516cb8fcba31",
+  "source_commit": "ce27a3a5c85db15312a3bbf746d44754ca918b36",
   "source_path": "src/sprint5/week1/EvoAgent_v5",
   "report_upload": "Withheld by user",
   "files": [
@@ -12,8 +12,8 @@
     },
     {
       "path": "RUN-AND-VERIFY.md",
-      "bytes": 4183,
-      "sha256": "e2efeba541d363571be39f9d3403023270ee11cda9a5a8e63792c520ab1f93ee"
+      "bytes": 4542,
+      "sha256": "70e0dd8c2fd5acf3494f375c8af09de097dc05c85b45c22a636b4800df4222ec"
     },
     {
       "path": "editable/Burndown-Plan.pdf",
@@ -57,8 +57,8 @@
     },
     {
       "path": "evidence/evaluation/current-source-20261127/README.md",
-      "bytes": 3862,
-      "sha256": "1d97744f47f2a9f806d95d9f311cdaf3906d923d5d70381b03a308907a78f74d"
+      "bytes": 4340,
+      "sha256": "9be5937ff89121c89b2d259ed80706c4a7b7bc4fd5dbcec4b65b5861c7d35c46"
     },
     {
       "path": "evidence/evaluation/current-source-20261127/controlled-evaluation.json",
@@ -192,8 +192,8 @@
     },
     {
       "path": "evidence/release/README.md",
-      "bytes": 1316,
-      "sha256": "5d8a65ff7fa6c6b1b1b23512b21fc009d3d9dccaf3f01b7e5a93fd262a8f7630"
+      "bytes": 1476,
+      "sha256": "b091d21c9c8553a1b600b4bbcf14d7d57eff4448771e57aa2e424e5d6effc632"
     },
     {
       "path": "evidence/release/Release-Tests.txt",
@@ -202,8 +202,8 @@
     },
     {
       "path": "evidence/release/current-delivery-update.json",
-      "bytes": 15550,
-      "sha256": "52ab8f62c4c1375467a90ccd1f669c803405d846e35ff41abc5a713a0de4916f"
+      "bytes": 16122,
+      "sha256": "284cbaa534e5fb986f507becb4a4308ea0e18e9286677011055240e67f94dae9"
     },
     {
       "path": "evidence/release/latest-source-dependencies.txt",
@@ -212,13 +212,13 @@
     },
     {
       "path": "evidence/release/latest-source-test-run.json",
-      "bytes": 594,
-      "sha256": "502e430d370fe976fe97f47891202ff78a7f8ac561ef246a3e7eefc520908d7e"
+      "bytes": 891,
+      "sha256": "43d4fd8de8a79ac77cc77c3a92eb303830cbfcec3b3f676fbe3e9744723aa2d3"
     },
     {
       "path": "evidence/release/latest-source-tests.txt",
       "bytes": 14807,
-      "sha256": "312f7d0f7c5444ae24313afbd96166c94295e8100bba8edeb50c2e19fbe0802c"
+      "sha256": "44078a240e47982271b2000f70182eef10f00c367a06417735aa4e40a640ec91"
     },
     {
       "path": "evidence/release/release-manifest.json",
@@ -332,8 +332,8 @@
     },
     {
       "path": "submission/EvoAgent-Final-Source.zip",
-      "bytes": 404286,
-      "sha256": "7ed1a3f93e55381feed827290da5bc00b46f605f88c2bbebe883702dd35d2abd"
+      "bytes": 400008,
+      "sha256": "5ef88f31ad45d58e2c55677379c65f2ca00d478a2eee8e839bbb42cce982f36e"
     },
     {
       "path": "submission/EvoAgent-Milestone-Burndown.pdf",
@@ -352,5 +352,6 @@
     }
   ],
   "process_records_updated_on": "2026-11-28",
-  "version_review_records_updated_on": "2026-11-28"
+  "version_review_records_updated_on": "2026-11-28",
+  "updated_on": "2026-11-28"
 }

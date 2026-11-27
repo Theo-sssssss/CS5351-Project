@@ -1,12 +1,13 @@
 {
-  "run_date": "2026-11-27",
+  "run_date": "2026-11-28",
   "timezone": "Asia/Shanghai",
-  "source_archive_sha256": "7ed1a3f93e55381feed827290da5bc00b46f605f88c2bbebe883702dd35d2abd",
+  "source_archive_sha256": "5ef88f31ad45d58e2c55677379c65f2ca00d478a2eee8e839bbb42cce982f36e",
+  "source_commit": "ce27a3a5c85db15312a3bbf746d44754ca918b36",
   "command": "python -m unittest discover -s tests -v",
   "python": "Python 3.11.5",
-  "environment": "Extracted source ZIP, no real .env, provider and GitHub environment overrides removed",
+  "environment": "Fresh extraction of the English-documentation source ZIP; no real .env; provider and GitHub overrides removed; existing dependencies reused.",
   "exit_code": 0,
-  "duration_seconds": 5.328,
+  "duration_seconds": 4.889,
   "tests_run": 89,
   "result": "PASS",
   "failures": 0,
@@ -14,5 +15,10 @@
   "warnings": [
     "Repeated OpenTelemetry TracerProvider override messages; no test failure."
   ],
-  "source_file_count": 99
+  "source_file_count": 99,
+  "documentation_only_changes": [
+    "README.md",
+    "RUN-LOCAL.md"
+  ],
+  "previous_tested_archive_sha256": "7ed1a3f93e55381feed827290da5bc00b46f605f88c2bbebe883702dd35d2abd"
 }

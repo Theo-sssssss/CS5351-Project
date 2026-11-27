@@ -100,6 +100,6 @@ test_registry_loads_standard_skill_and_resources_without_python (test_skill_evol
 test_skill_md_requires_frontmatter_and_matching_directory_name (test_skill_evolution.SkillEvolutionTests.test_skill_md_requires_frontmatter_and_matching_directory_name) ... ok
 
 ----------------------------------------------------------------------
-Ran 89 tests in 3.453s
+Ran 89 tests in 3.342s
 
 OK
