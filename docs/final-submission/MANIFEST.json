@@ -252,13 +252,13 @@
     },
     {
       "path": "process/Evidence-Index.md",
-      "bytes": 6714,
-      "sha256": "b4da70591fb662a68bbf5b1950e9433645221193afb865de6d34d6f529282bad"
+      "bytes": 6603,
+      "sha256": "940c33944d9fe8bef7a6ae2c28ae6fcfdc84db4bc91df30b8b13ca60cca1bf68"
     },
     {
       "path": "process/README.md",
-      "bytes": 5980,
-      "sha256": "ade25911ba4fa35d00599fe57fa838508237bc8579081f05595a0fa5bdd8ec2c"
+      "bytes": 5855,
+      "sha256": "e79bc80f953fe2fa6b81695d5f5f19b87c0af26b3cb5c779ee96b0f12f49ef33"
     },
     {
       "path": "process/Sprint-1-Records.md",
@@ -272,8 +272,8 @@
     },
     {
       "path": "process/Sprint-3-Records.md",
-      "bytes": 9547,
-      "sha256": "9f1e5d1962046cc6ec9ef550258bae44f5b2ceaf52ff8e210d4b1001c3f47472"
+      "bytes": 9360,
+      "sha256": "44a6d9c630b34970ac15d4e17fa0fcfa265dc58338967cdbd778e45b1654e16a"
     },
     {
       "path": "process/V1-Retrospective.md",

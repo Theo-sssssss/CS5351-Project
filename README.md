@@ -10,7 +10,7 @@
 | Presentation and demo | [PowerPoint](docs/final-submission/submission/EvoAgent-Presentation.pptx), [slides PDF](docs/final-submission/submission/EvoAgent-Presentation.pdf), [demo video](docs/final-submission/submission/EvoAgent-Demo.mp4) |
 | Process records | [Sprint and version index](docs/final-submission/process) |
 | Individual contributions | [Version hours, completed V5 tasks and evidence](docs/final-submission/process/Contribution-Traceability.md) |
-| Weekly discussion evidence | [Twelve original calendar screenshots](docs/evidence) |
+| Weekly discussion evidence | [Eleven original calendar screenshots](docs/evidence) |
 | Testing and evaluation | [Regression record](docs/final-submission/evidence/release/latest-source-test-run.json), [offline results](docs/final-submission/evidence/evaluation/current-source-20261127/README.md) |
 | Reproduction instructions | [Run and verify](docs/final-submission/RUN-AND-VERIFY.md) |
 

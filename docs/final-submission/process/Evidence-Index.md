@@ -10,7 +10,7 @@ Repository: [Theo-sssssss/CS5351-Project](https://github.com/Theo-sssssss/CS5351
 | --- | --- | --- |
 | Verified V5 source | [e48ee63](https://github.com/Theo-sssssss/CS5351-Project/tree/e48ee634b7f609a89f761adc8b7a516cb8fcba31/src/sprint5/week1/EvoAgent_v5) | 99 source files matching the tested archive, plus two repository description files |
 | Non-report delivery files | [61c6b2f](https://github.com/Theo-sssssss/CS5351-Project/tree/61c6b2f6861dd72fc2c20bf7df3aedbc1aef7086/docs/final-submission) | Completed V5 records, presentation, demo, source archive and verification outputs |
-| Weekly screenshots | [ea1c3e7](https://github.com/Theo-sssssss/CS5351-Project/tree/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence) | 12 original calendar screenshots and file checksums |
+| Weekly screenshots | [Current evidence](https://github.com/Theo-sssssss/CS5351-Project/tree/main/docs/evidence) | 11 original calendar screenshots and file checksums |
 | Current source identity | [Release identity](../evidence/release/current-delivery-update.json) | Source hashes and uploaded source revision |
 | Current regression | [Run record](../evidence/release/latest-source-test-run.json), [full log](../evidence/release/latest-source-tests.txt), [dependencies](../evidence/release/latest-source-dependencies.txt) | 89 passes, zero failures/errors; Python 3.11.5; fresh archive extraction using an existing dependency environment |
 | Current offline comparison | [Summary](../evidence/evaluation/current-source-20261127/README.md), [raw JSON](../evidence/evaluation/current-source-20261127/controlled-evaluation.json), [run metadata](../evidence/evaluation/current-source-20261127/run-metadata.json) | Fixed synthetic data, source/dataset hashes, seed and commands; no real LLM calls |
@@ -46,7 +46,7 @@ The [paired public-PR pilot](../evidence/evaluation/paired-pilot.json) and [batc
 
 ## Weekly discussion evidence
 
-The [calendar screenshot index](https://github.com/Theo-sssssss/CS5351-Project/tree/main/docs/evidence) links all 12 originals from Week 02 through Week 13. The dated entries establish scheduled appointments, while the team separately confirmed attendance for meetings already held. Screenshots do not establish individual authorship or ceremony decisions. The 4 December entry is outside the stated Sprint 3 period.
+The [calendar screenshot index](https://github.com/Theo-sssssss/CS5351-Project/tree/main/docs/evidence) links all 11 originals from Week 02 through Week 12. The dated entries establish scheduled appointments, while the team separately confirmed attendance for meetings already held. Screenshots do not establish individual authorship or ceremony decisions.
 
 | Sprint | Planning | Review | Retrospective |
 | --- | --- | --- | --- |
@@ -54,7 +54,7 @@ The [calendar screenshot index](https://github.com/Theo-sssssss/CS5351-Project/t
 | 2 | 12 October 2026 | 6 November 2026 | 6 November 2026 |
 | 3 | 9 November 2026 | 27 November 2026 | 27 November 2026 |
 
-The 27 November Sprint 3 checkpoint supersedes the earlier 4 December calculation; the formal Sprint period still ends on 30 November. V3's 7 November upload followed the 6 November Review and is recorded as Sprint-end follow-up.
+The Sprint 3 Review and Retrospective checkpoint is 27 November; the formal Sprint period ends on 30 November. V3's 7 November upload followed the 6 November Review and is recorded as Sprint-end follow-up.
 
 ## Completion and contribution evidence
 

@@ -82,13 +82,6 @@
       "scheduled_date": "2026-11-27",
       "bytes": 51042,
       "sha256": "7efa3860da1b345833b4d9417410a59542c395e69f6d39eb770a76a2fb248747"
-    },
-    {
-      "file": "week-13-2026-12-04.jpg",
-      "course_week": 13,
-      "scheduled_date": "2026-12-04",
-      "bytes": 50684,
-      "sha256": "bf1971b4ebfb0b51e53290f10ceb3b6c5acfc9fecd0c9375c1fd2753c9eb7493"
     }
   ]
 }

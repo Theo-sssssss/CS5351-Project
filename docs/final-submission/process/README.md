@@ -16,7 +16,7 @@ Jiexuan Shen, Jiayu Zhu, Siye Tu, Tianyi Jiang, Jianyu Zhou and Xinyu Zhang. The
 | 2 | 12 October–8 November 2026 | V2, V3 | 12 October | 6 November |
 | 3 | 9–30 November 2026 | V4, V5 and integrated delivery | 9 November | 27 November |
 
-The team specifies development from Week 2 through Week 12. Version folders named `sprint1` through `sprint5` identify five increments, not five course Sprints. V3 was uploaded on 7 November after the Sprint 2 Review, so its upload is Sprint-end follow-up evidence. The 4 December / Week 13 calendar entry is outside the stated Sprint 3 date range and is not treated as a completed meeting.
+The team specifies development from Week 2 through Week 12. Version folders named `sprint1` through `sprint5` identify five increments, not five course Sprints. V3 was uploaded on 7 November after the Sprint 2 Review, so its upload is Sprint-end follow-up evidence.
 
 ## Records and evidence
 

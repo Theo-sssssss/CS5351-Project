@@ -2,9 +2,9 @@
 
 Group 04. Team name: **group**.
 
-This directory contains the 12 original calendar screenshots supplied by the team for the weekly SE discussions. Dates and course-week labels follow the supplied filenames and the 2026 project calendar. The images are preserved without content changes.
+This directory contains the 11 original calendar screenshots supplied by the team for the weekly SE discussions. Dates and course-week labels follow the supplied filenames and the 2026 project calendar. The images are preserved without content changes.
 
-These screenshots record scheduled calendar entries. Meeting discussions, attendance confirmations, Review decisions and Retrospective outcomes are documented separately in the [process records](../final-submission/process/). The 4 December entry is a scheduled appointment outside the team's stated Sprint 3 period.
+These screenshots record scheduled calendar entries. Meeting discussions, attendance confirmations, Review decisions and Retrospective outcomes are documented separately in the [process records](../final-submission/process/).
 
 | No. | Course week | Scheduled date | Evidence |
 | --- | --- | --- | --- |
@@ -19,6 +19,5 @@ These screenshots record scheduled calendar entries. Meeting discussions, attend
 | 09 | Week 10 | 2026-11-13 | [View screenshot](week-10-2026-11-13.jpg) |
 | 10 | Week 11 | 2026-11-20 | [View screenshot](week-11-2026-11-20.jpg) |
 | 11 | Week 12 | 2026-11-27 | [View screenshot](week-12-2026-11-27.jpg) |
-| 12 | Week 13 | 2026-12-04 | [View screenshot](week-13-2026-12-04.jpg) |
 
 File sizes and SHA-256 checksums are recorded in [manifest.json](manifest.json).

@@ -18,7 +18,7 @@ Status at the team-specified 27 November reporting checkpoint: documented develo
 | Week 11 | 2026-11-20 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-11-2026-11-20.jpg) |
 | Week 12 | 2026-11-27 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-12-2026-11-27.jpg) |
 
-The [Week 13 / 4 December appointment](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-13-2026-12-04.jpg) is outside the stated 9–30 November Sprint period. Screenshots establish scheduled entries, while the team separately confirmed attendance and the 27 November completion account.
+Screenshots establish scheduled entries, while the team separately confirmed attendance and the 27 November completion account.
 
 ## Sprint Planning
 
