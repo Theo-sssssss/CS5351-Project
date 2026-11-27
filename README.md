@@ -7,6 +7,7 @@ Team name: **group**. EvoAgent is a pull-request review assistant with evidence-
 - [V5 refreshed source](src/sprint5/week1/EvoAgent_v5)
 - [Presentation, demo and delivery records](docs/final-submission)
 - [Completed V5 Review and Retrospective](docs/final-submission/process/V5-Sprint-Backlog-Review-Retrospective.md)
+- [Weekly SE discussion screenshots](docs/evidence)
 - [Run and verify](docs/final-submission/RUN-AND-VERIFY.md)
 - [Current-source offline evaluation](docs/final-submission/evidence/evaluation/current-source-20261127/README.md)
 
