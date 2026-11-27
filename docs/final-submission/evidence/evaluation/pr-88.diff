@@ -1,0 +1,59 @@
+diff --git a/click/types.py b/click/types.py
+index 0c084e9cf..41f89d8e3 100644
+--- a/click/types.py
++++ b/click/types.py
+@@ -27,9 +27,9 @@ class ParamType(object):
+ 
+     #: if a list of this type is expected and the value is pulled from a
+     #: string environment variable, this is what splits it up.  `None`
+-    #: means any whitespace.  For all parameter the general rule is that
++    #: means any whitespace.  For all parameters the general rule is that
+     #: whitespace splits them up.  The exception are paths and files which
+-    #: are split by ``os.path.pathsep`` by default (":" on unix and ";' on
++    #: are split by ``os.path.pathsep`` by default (":" on unix and ";" on
+     #: windows).
+     envvar_list_splitter = None
+ 
+diff --git a/docs/options.rst b/docs/options.rst
+index 5e2d8eb3b..d18876b5b 100644
+--- a/docs/options.rst
++++ b/docs/options.rst
+@@ -427,15 +427,15 @@ where the first one is picked.
+ Multiple Values from Environment Values
+ ---------------------------------------
+ 
+-As options can accept multiple values pulling in such values from
++As options can accept multiple values, pulling in such values from
+ environment variables (which are strings) is a bit more complex.  The way
+ click solves this is by leaving it up to the type to customize this
+-behavior.  For both ``multiple`` and ``nargs`` with other values than
+-``1`` click will invoke the :meth:`ParamType.split_envvar_value` method to
++behavior.  For both ``multiple`` and ``nargs`` with values other than
++``1``, click will invoke the :meth:`ParamType.split_envvar_value` method to
+ perform the splitting.
+ 
+ The default implementation for all types is to split on whitespace.  The
+-exception to this rules are the :class:`File` and :class:`Path` types
++exceptions to this rule are the :class:`File` and :class:`Path` types
+ which both split according to the operating system's path splitting rules.
+ On UNIX systems like Linux and OS X the splitting happens for those on
+ every colon (``:``) and for Windows on a semicolon (``;``).
+diff --git a/docs/utils.rst b/docs/utils.rst
+index 4ed3f7311..4920c91db 100644
+--- a/docs/utils.rst
++++ b/docs/utils.rst
+@@ -34,10 +34,10 @@ supressed by passing ``nl=False``::
+ Printing Filenames
+ ------------------
+ 
+-Because filenames might not be unicode formatting them can be a bit
+-tricky.  Generally this is easier on Python 2 than 3 as you can just write
+-the bytes to stdout with the print function, but at least on Python 3 you
+-will need to always operate in unicode.
++Because filenames might not be unicode, formatting them can be a bit
++tricky.  Generally this is easier on Python 2 than on 3 as you can just
++write the bytes to stdout with the print function, but at least on Python
++3 you will need to always operate in unicode.
+ 
+ The way this works with click is through the :func:`format_filename`
+ function.  It does a best effort conversion of the filename to Unicode and

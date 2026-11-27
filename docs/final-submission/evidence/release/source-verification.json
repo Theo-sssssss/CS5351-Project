@@ -1,0 +1,13 @@
+{
+  "verified_on": "2026-11-23",
+  "source_repository": "https://github.com/Theo-sssssss/CS5351-Project",
+  "selected_branch": "codex/evoagent-final-delivery",
+  "source_path": "src/final/EvoAgent",
+  "source_commit": "b9a63e3097635cc5d6f6bad14b82732da43dba02",
+  "verified_file_count": 98,
+  "git_blob_matches": true,
+  "release_sha256_manifest_matches": true,
+  "missing_extra_or_mismatched_files": [],
+  "source_zip_sha256": "fd2b6c9028961a9a2f596e863ff5ce291dead7f262260194e9834999f05c970f",
+  "fresh_regression_run_performed_for_this_package": false
+}

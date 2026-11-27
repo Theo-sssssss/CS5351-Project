@@ -1,0 +1,319 @@
+{
+  "package": "Group 04 V5 repository delivery",
+  "prepared_on": "2026-11-28",
+  "source_commit": "e48ee634b7f609a89f761adc8b7a516cb8fcba31",
+  "source_path": "src/sprint5/week1/EvoAgent_v5",
+  "report_upload": "Withheld by user",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1979,
+      "sha256": "a455187d9774a4671b7f3f8be2587c0d25c6825ceaa12ea8bf3f3b8e259f9b71"
+    },
+    {
+      "path": "REMAINING-WORK.md",
+      "bytes": 1017,
+      "sha256": "6baf113fc90106db5b689566eaf178c135a1e7100bf3d21f830e009d1c371a4d"
+    },
+    {
+      "path": "RUN-AND-VERIFY.md",
+      "bytes": 4162,
+      "sha256": "c8cf2e15582efaf01ac0971a73fef500b6a3810328da519729528950c33d76c7"
+    },
+    {
+      "path": "editable/Burndown-Plan.pdf",
+      "bytes": 1842,
+      "sha256": "da20acc3997ffc8b45c442c73f791ab2c27d26baeb75968d56ab50ca34eaa417"
+    },
+    {
+      "path": "editable/EvoAgent-Actual-Burndown.pdf",
+      "bytes": 27709,
+      "sha256": "e6fd78474708cdfe86c8605856b72aae021876cb8318a233673b1cd5549f089e"
+    },
+    {
+      "path": "editable/EvoAgent-Milestone-Burndown.pdf",
+      "bytes": 2751,
+      "sha256": "4ab1edb758236f19abc02c64e88f9a425c0738bceaa6bf075dadb6a6a65ca62d"
+    },
+    {
+      "path": "editable/Presentation-Notes.md",
+      "bytes": 2708,
+      "sha256": "6ba2ae3e355feee702650a50563d48805833cc9fc20e695ebe45d69d11bb33f4"
+    },
+    {
+      "path": "evidence/evaluation/README.md",
+      "bytes": 1834,
+      "sha256": "a4b1d27420c7f3fa333f6042722e39473872590bc7317725cd394b944852ce49"
+    },
+    {
+      "path": "evidence/evaluation/V5-Evaluation-Results.md",
+      "bytes": 3603,
+      "sha256": "b98633687523e2fcedbe1c9a52460873b50757b2f0f0b9cb5efce685331c1cdc"
+    },
+    {
+      "path": "evidence/evaluation/arm-batched.json",
+      "bytes": 3419,
+      "sha256": "60575b417d717b00161a2a30585c875d7caae64622dd4bb86b0e6af72a168730"
+    },
+    {
+      "path": "evidence/evaluation/arm-legacy.json",
+      "bytes": 3326,
+      "sha256": "617e1689335a3add5c8db25c3c6af56cf3362ba1025c9d705ae9b8ac8d20de2c"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/README.md",
+      "bytes": 3862,
+      "sha256": "1d97744f47f2a9f806d95d9f311cdaf3906d923d5d70381b03a308907a78f74d"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/controlled-evaluation.json",
+      "bytes": 1037301,
+      "sha256": "098ae4120b14829ae3cdddb0b624fed8ca1b74f28e06e0c2f93618eb8f9d0b73"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/controlled-run.log",
+      "bytes": 91,
+      "sha256": "3b0c90774c647ae7bfc6af622cd95be9a173af18f2a12022ebd29543ed9c8e0a"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/dependencies.txt",
+      "bytes": 600,
+      "sha256": "18601e45de167e5aa455fae2954a86b8f0e70fe27b7594f4e3e0a2735f3d2741"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/prompt-evolution-proof.json",
+      "bytes": 111924,
+      "sha256": "bdcb55ad6d42d0cee159c691b030e73c7eb84451dff79ed699ad834aa65e678d"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/prompt-run.log",
+      "bytes": 277,
+      "sha256": "248610c6fc187ac79e6a5c8bf82feadad9bba36907a4c028d3c90836e4f4a773"
+    },
+    {
+      "path": "evidence/evaluation/current-source-20261127/run-metadata.json",
+      "bytes": 1563,
+      "sha256": "fc12cd2522e257c80a67cae0bf5c91e34f081f08e61867ad3c90d3d7fe237838"
+    },
+    {
+      "path": "evidence/evaluation/demo-trace.json",
+      "bytes": 1394,
+      "sha256": "cf08c7d4cd5394665915e0fdff3669c7fe0f36c5b0b8ceb8eaf25d33eefbae6a"
+    },
+    {
+      "path": "evidence/evaluation/engine-smoke-first-attempt.json",
+      "bytes": 8220,
+      "sha256": "f910888db66a0a66f951c7aef181efefef345ee595d688b191fb6453767d0d56"
+    },
+    {
+      "path": "evidence/evaluation/engine-smoke-stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "evidence/evaluation/engine-smoke-system-python.json",
+      "bytes": 8220,
+      "sha256": "a6430a175c57b4ecf33aa6dd6255ec67f04a35da113c4adb5c4b248bef1073f1"
+    },
+    {
+      "path": "evidence/evaluation/engine-smoke.json",
+      "bytes": 114,
+      "sha256": "49c6fe9dc4a6c408357206456f1799a40941c25d7e59bce0dd4b357c2f0ad5b5"
+    },
+    {
+      "path": "evidence/evaluation/paired-pilot.json",
+      "bytes": 8123,
+      "sha256": "a4638710cb4ecb4253c953251764c9f5738401f3cecc8c9ca6ab46e85ffeb28d"
+    },
+    {
+      "path": "evidence/evaluation/pr-88.diff",
+      "bytes": 2926,
+      "sha256": "ba04e06307cf26d87727dcea117f05f2997498621e8903918269163cacb44754"
+    },
+    {
+      "path": "evidence/evaluation/pr-88.json",
+      "bytes": 286,
+      "sha256": "709145b371ac6732152556b71baccd12f9669105cc773b969a7cc717009c7f49"
+    },
+    {
+      "path": "evidence/evaluation/provider-probe.json",
+      "bytes": 818,
+      "sha256": "f3b31347575e3851e09c0d6c7db4326a49b97c611b581a8ac84e49ef6b335c96"
+    },
+    {
+      "path": "evidence/evaluation/smoke.jsonl",
+      "bytes": 3119,
+      "sha256": "31d616aadc75eb94ef7efbb6498aa98b6a89a4fa003d783098a9720362ef1d87"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_final-tests.txt",
+      "bytes": 98,
+      "sha256": "f1d8001da598318df5a40a4df5d6782158e4bb6beb48b9e6076011b95102e0b8"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v1-tests.txt",
+      "bytes": 97,
+      "sha256": "2a50b4749107e50e3993c9a59df48e8d8cebd81e26a286e83bb83d7fe81b2d90"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v2-tests.txt",
+      "bytes": 98,
+      "sha256": "f5af94abcf407298db6997cdad2d208795c7b262135d06ad8348de1a2edd9696"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v3-tests.txt",
+      "bytes": 98,
+      "sha256": "595fea907e22c2aee0addfe52fa797085103ce6e01d81b1810f51ea013b016d9"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v4-after-sha256.json",
+      "bytes": 382,
+      "sha256": "eee759c1aa66e63a08005ab121e5a0890b6cd9d45e6588a883f8c27c3346f0fa"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v4-after-tests.txt",
+      "bytes": 205355,
+      "sha256": "52efff0e4c0adc72a170be1680070674160aacba13596a73847701947597a03c"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v4-tests.txt",
+      "bytes": 8184,
+      "sha256": "2c8a2cf9e66e5a0d4951321c786fb888c6657e5cb6efba01bc6dee747f5c433c"
+    },
+    {
+      "path": "evidence/regression/EvoAgent_v5-tests.txt",
+      "bytes": 262214,
+      "sha256": "c04886f3580804afb5dd54c8f6271a53bca7e6ebdf876fa77245e36e532606ae"
+    },
+    {
+      "path": "evidence/regression/source-sha256.json",
+      "bytes": 29097,
+      "sha256": "c512119397c30d79d9dafe8977d4efc279f7991e17ef89bc0b43a6324ad80078"
+    },
+    {
+      "path": "evidence/regression/test-runs.json",
+      "bytes": 872,
+      "sha256": "c9946cb2bb9589fdba5b22c98c64bbff536297630a4eaac7633738f7f7ecc9c7"
+    },
+    {
+      "path": "evidence/release/README.md",
+      "bytes": 1316,
+      "sha256": "5d8a65ff7fa6c6b1b1b23512b21fc009d3d9dccaf3f01b7e5a93fd262a8f7630"
+    },
+    {
+      "path": "evidence/release/Release-Tests.txt",
+      "bytes": 98,
+      "sha256": "a9df62c65351473ae1479d4bf4684a53a04eb2a5e24353b8f2d8285ddb52e14b"
+    },
+    {
+      "path": "evidence/release/current-delivery-update.json",
+      "bytes": 15550,
+      "sha256": "52ab8f62c4c1375467a90ccd1f669c803405d846e35ff41abc5a713a0de4916f"
+    },
+    {
+      "path": "evidence/release/latest-source-dependencies.txt",
+      "bytes": 600,
+      "sha256": "18601e45de167e5aa455fae2954a86b8f0e70fe27b7594f4e3e0a2735f3d2741"
+    },
+    {
+      "path": "evidence/release/latest-source-test-run.json",
+      "bytes": 594,
+      "sha256": "502e430d370fe976fe97f47891202ff78a7f8ac561ef246a3e7eefc520908d7e"
+    },
+    {
+      "path": "evidence/release/latest-source-tests.txt",
+      "bytes": 14807,
+      "sha256": "312f7d0f7c5444ae24313afbd96166c94295e8100bba8edeb50c2e19fbe0802c"
+    },
+    {
+      "path": "evidence/release/release-manifest.json",
+      "bytes": 9652,
+      "sha256": "b6a47b8a71a438acdc86760546b3b18cd10489976cf45bf8b053e84ad82efcdf"
+    },
+    {
+      "path": "evidence/release/source-release-commit.txt",
+      "bytes": 41,
+      "sha256": "23f8c8cc54ba3b216ba3fea8215193f48eb7a9c83eae7915e1af8b1e9daff221"
+    },
+    {
+      "path": "evidence/release/source-verification.json",
+      "bytes": 557,
+      "sha256": "b85ce6c5bdaf097f24f5e974e4a6a978da085cea68f662fc52345afd6e32c003"
+    },
+    {
+      "path": "evidence/repository/branch-heads.json",
+      "bytes": 275,
+      "sha256": "66260ddb332114c612c85b7ad9470a56fa5f462d8bc168b4801242d8b03405b6"
+    },
+    {
+      "path": "evidence/repository/main-commit-history.json",
+      "bytes": 4890,
+      "sha256": "0e5ccc7dbaa4890fa160d213d0a56bbcf3e05cc7ad946311fb04833e9a199b16"
+    },
+    {
+      "path": "process/Contribution-Traceability.md",
+      "bytes": 6170,
+      "sha256": "d90d3e8db0c031269e243b8d15797a9b8826ff5d7d3c46a74110fa97f222863b"
+    },
+    {
+      "path": "process/Evidence-Index.md",
+      "bytes": 6062,
+      "sha256": "956433e40ff73e08f264e5759628defd01a6110d96db645f4e1f0a91ff30d186"
+    },
+    {
+      "path": "process/README.md",
+      "bytes": 6095,
+      "sha256": "ba5c679a8671d2f74adc0705ceb6dee353c20e5d8cb03f55ca2cfde1344eac74"
+    },
+    {
+      "path": "process/Sprint-1-Records.md",
+      "bytes": 7443,
+      "sha256": "dcce2464c8bbfc6d51dc68c1d4f2f52d5d29d4d62179bac46276904a3b42a978"
+    },
+    {
+      "path": "process/Sprint-2-Records.md",
+      "bytes": 8119,
+      "sha256": "a8c2e0daf917d640c24f6e5202a3e3ceb5799cf915427126339e64fc7f535902"
+    },
+    {
+      "path": "process/Sprint-3-Records.md",
+      "bytes": 8589,
+      "sha256": "05ba154e27dcbc5f06b415dc81e17f630ab684336988e029d45c9efad8da683b"
+    },
+    {
+      "path": "process/V5-Sprint-Backlog-Review-Retrospective.md",
+      "bytes": 8797,
+      "sha256": "42c95ef2bddd37764883d8be7e778fd430d6234a877725b95d6c611350dff03f"
+    },
+    {
+      "path": "submission/EvoAgent-Actual-Burndown.pdf",
+      "bytes": 27709,
+      "sha256": "e6fd78474708cdfe86c8605856b72aae021876cb8318a233673b1cd5549f089e"
+    },
+    {
+      "path": "submission/EvoAgent-Demo.mp4",
+      "bytes": 2703603,
+      "sha256": "26320dd4232d25654111a29caaadeaf878401ef227963840837875e72b78e832"
+    },
+    {
+      "path": "submission/EvoAgent-Final-Source.zip",
+      "bytes": 404286,
+      "sha256": "7ed1a3f93e55381feed827290da5bc00b46f605f88c2bbebe883702dd35d2abd"
+    },
+    {
+      "path": "submission/EvoAgent-Milestone-Burndown.pdf",
+      "bytes": 2751,
+      "sha256": "4ab1edb758236f19abc02c64e88f9a425c0738bceaa6bf075dadb6a6a65ca62d"
+    },
+    {
+      "path": "submission/EvoAgent-Presentation.pdf",
+      "bytes": 179233,
+      "sha256": "a9a9871b3cdad4d6d302be1a7e2ea5fdd5cf77318d584195e61ed2fc1247b0a4"
+    },
+    {
+      "path": "submission/EvoAgent-Presentation.pptx",
+      "bytes": 60401,
+      "sha256": "aadab249bfe088f500b388c671377811ee4e02f95d9803d33a44b76897898916"
+    }
+  ]
+}

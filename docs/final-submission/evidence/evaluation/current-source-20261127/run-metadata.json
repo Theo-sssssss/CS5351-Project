@@ -1,0 +1,46 @@
+{
+  "run_date": "2026-11-27",
+  "timezone": "Asia/Shanghai",
+  "source_archive_sha256": "7ed1a3f93e55381feed827290da5bc00b46f605f88c2bbebe883702dd35d2abd",
+  "python": "Python 3.11.5",
+  "execution_mode": "controlled-offline-no-llm",
+  "environment": "Fresh extraction of current source ZIP; no real .env; provider and GitHub environment overrides removed. Existing installed dependency environment.",
+  "seed": 20260819,
+  "bootstrap_iterations": 1000,
+  "datasets": [
+    {
+      "path": "evaluation_data/pr_diff_100.jsonl",
+      "sha256": "65f301c0c75125676d5da482ffa00828399b7041d4db378bc52e48baab36b1b6"
+    },
+    {
+      "path": "evaluation_data/prompt_evolution_130.jsonl",
+      "sha256": "6438352ad68afa354e4d52cb9def459c4d3006f87edae4522e806f539121cf77"
+    }
+  ],
+  "runs": {
+    "controlled": {
+      "command": [
+        "/Users/xiaowanzidemac/Downloads/EvoAgent 2/.venv/bin/python",
+        "scripts/run_controlled_experiments.py",
+        "--seed",
+        "20260819",
+        "--bootstrap-iterations",
+        "1000",
+        "--output",
+        "/Users/xiaowanzidemac/Downloads/evoagent-metrics-rerun-ijb6alwv/controlled/evaluation.json"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.567
+    },
+    "prompt": {
+      "command": [
+        "/Users/xiaowanzidemac/Downloads/EvoAgent 2/.venv/bin/python",
+        "scripts/run_prompt_evolution_proof.py",
+        "--output-dir",
+        "/Users/xiaowanzidemac/Downloads/evoagent-metrics-rerun-ijb6alwv/prompt"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.595
+    }
+  }
+}

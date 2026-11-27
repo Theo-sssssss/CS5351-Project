@@ -1,0 +1,86 @@
+======================================================================
+ERROR: test_controlled_accuracy_reports_full_metric_contract (test_evaluation_experiments.EvaluationExperimentTests.test_controlled_accuracy_reports_full_metric_contract)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/tests/test_evaluation_experiments.py", line 139, in test_controlled_accuracy_reports_full_metric_contract
+    report = AccuracyExperimentSuite().run()
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_experiments.py", line 273, in run
+    controlled = self.run_controlled()
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_experiments.py", line 225, in run_controlled
+    cases = list(cases or load_controlled_pr_cases())
+                          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_experiments.py", line 30, in load_controlled_pr_cases
+    return load_jsonl(path or DEFAULT_CONTROLLED_DATASET)
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_harness.py", line 40, in load_jsonl
+    with open(path, "r", encoding="utf-8") as handle:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evaluation_data/pr_diff_100.jsonl'
+
+======================================================================
+ERROR: test_controlled_adapter_creates_repository_disjoint_60_20_20_splits (test_evaluation_experiments.EvaluationExperimentTests.test_controlled_adapter_creates_repository_disjoint_60_20_20_splits)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/tests/test_evaluation_experiments.py", line 122, in test_controlled_adapter_creates_repository_disjoint_60_20_20_splits
+    cases = prepare_controlled_experiment_cases(load_controlled_pr_cases())
+                                                ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_experiments.py", line 30, in load_controlled_pr_cases
+    return load_jsonl(path or DEFAULT_CONTROLLED_DATASET)
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_harness.py", line 40, in load_jsonl
+    with open(path, "r", encoding="utf-8") as handle:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evaluation_data/pr_diff_100.jsonl'
+
+======================================================================
+ERROR: test_dataset_round_trip_has_stable_fingerprint (test_evaluation_harness.EndToEndEvaluationTests.test_dataset_round_trip_has_stable_fingerprint)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/tests/test_evaluation_harness.py", line 101, in test_dataset_round_trip_has_stable_fingerprint
+    cases = load_controlled_pr_cases()
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_experiments.py", line 30, in load_controlled_pr_cases
+    return load_jsonl(path or DEFAULT_CONTROLLED_DATASET)
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_harness.py", line 40, in load_jsonl
+    with open(path, "r", encoding="utf-8") as handle:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evaluation_data/pr_diff_100.jsonl'
+
+======================================================================
+ERROR: test_generated_dataset_has_repository_level_split_and_expected_counts (test_evaluation_harness.EndToEndEvaluationTests.test_generated_dataset_has_repository_level_split_and_expected_counts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/tests/test_evaluation_harness.py", line 17, in test_generated_dataset_has_repository_level_split_and_expected_counts
+    cases = load_controlled_pr_cases()
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_experiments.py", line 30, in load_controlled_pr_cases
+    return load_jsonl(path or DEFAULT_CONTROLLED_DATASET)
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_harness.py", line 40, in load_jsonl
+    with open(path, "r", encoding="utf-8") as handle:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evaluation_data/pr_diff_100.jsonl'
+
+======================================================================
+ERROR: test_feedback_evolution_improves_repository_disjoint_holdout (test_evolution_proof.PromptEvolutionProofTests.test_feedback_evolution_improves_repository_disjoint_holdout)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/tests/test_evolution_proof.py", line 14, in test_feedback_evolution_improves_repository_disjoint_holdout
+    cases = generate_prompt_evolution_cases()
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evolution_proof.py", line 41, in generate_prompt_evolution_cases
+    return load_prompt_evolution_cases()
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evolution_proof.py", line 36, in load_prompt_evolution_cases
+    return load_jsonl(dataset_path)
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evoagent/evaluation_harness.py", line 40, in load_jsonl
+    with open(path, "r", encoding="utf-8") as handle:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/evaluation_data/prompt_evolution_130.jsonl'
+
+======================================================================
+FAIL: test_safe_fixer_changes_only_supported_rules (test_advanced.AdvancedFeatureTests.test_safe_fixer_changes_only_supported_rules)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/tuishaoyao/Desktop/SemA_Courses/CS5351_Software_Engineering/seproject/version/EvoAgent_v4/tests/test_advanced.py", line 41, in test_safe_fixer_changes_only_supported_rules
+    self.assertIn('password = os.environ["PASSWORD"]', result["content"])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'password = os.environ["PASSWORD"]' not found in "import os\npassword = os.environ['PASSWORD']\nresult = eval(user_input)\n"
+
+----------------------------------------------------------------------
+Ran 70 tests in 1.723s
+
+FAILED (failures=1, errors=5)

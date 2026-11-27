@@ -1,0 +1,110 @@
+[
+  {
+    "sha": "faf93a111f24bff749a8dc1c26c9aa56bddf2b88",
+    "date": "2026-11-23T19:33:03+08:00",
+    "subject": "feat(sprint5): add EvoAgent V5 project",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/faf93a111f24bff749a8dc1c26c9aa56bddf2b88"
+  },
+  {
+    "sha": "7a866faddaca3d715b987a1325bf7f2a7772ca5d",
+    "date": "2026-11-21T13:19:03+08:00",
+    "subject": "feat(sprint4): add restored V4 project and sprint backlog",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/7a866faddaca3d715b987a1325bf7f2a7772ca5d"
+  },
+  {
+    "sha": "aefe1f741cebf4e840b76726c84be5668a476c1d",
+    "date": "2026-11-07T22:58:48+08:00",
+    "subject": "feat(sprint3): add EvoAgent V3 agentic review",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/aefe1f741cebf4e840b76726c84be5668a476c1d"
+  },
+  {
+    "sha": "f48273c529f26f948aa2922d760c145de4408ada",
+    "date": "2026-10-18T21:56:58+08:00",
+    "subject": "docs: rename V2 sprint backlog",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/f48273c529f26f948aa2922d760c145de4408ada"
+  },
+  {
+    "sha": "f2315543fd577c573d1e629d9e39750107047a40",
+    "date": "2026-10-18T21:51:40+08:00",
+    "subject": "feat(sprint2): add EvoAgent V2 collaborative reviewer",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/f2315543fd577c573d1e629d9e39750107047a40"
+  },
+  {
+    "sha": "103fccecd98c038b5112cd6ea0c41cad46808071",
+    "date": "2026-10-18T21:48:45+08:00",
+    "subject": "docs: add V2 sprint backlog",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/103fccecd98c038b5112cd6ea0c41cad46808071"
+  },
+  {
+    "sha": "d0a3b98b9112ad6ef5f383a3381a7f93c1692850",
+    "date": "2026-09-22T16:18:15+08:00",
+    "subject": "docs: add V1 sprint backlog",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/d0a3b98b9112ad6ef5f383a3381a7f93c1692850"
+  },
+  {
+    "sha": "258b304f041af6457af73f247838c84aef9e013d",
+    "date": "2026-09-22T15:38:55+08:00",
+    "subject": "Restore EvoAgent v1 source",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/258b304f041af6457af73f247838c84aef9e013d"
+  },
+  {
+    "sha": "7300182214a91fa1fc7af119f8be4037845f8986",
+    "date": "2026-09-22T15:07:47+08:00",
+    "subject": "Delete src/sprint1/week1/EvoAgent_v1 directory",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/7300182214a91fa1fc7af119f8be4037845f8986"
+  },
+  {
+    "sha": "eb95981c628cdfd7c680fbc57f4a69552f58505a",
+    "date": "2026-09-13T23:27:57+08:00",
+    "subject": "Add files via upload",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/eb95981c628cdfd7c680fbc57f4a69552f58505a"
+  },
+  {
+    "sha": "52f42ae5bef2fc875a0dc71c4b68775b61d36acb",
+    "date": "2026-09-13T23:09:32+08:00",
+    "subject": "Add files via upload",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/52f42ae5bef2fc875a0dc71c4b68775b61d36acb"
+  },
+  {
+    "sha": "c56db9621b50918f4427e1cf567665622e9110c7",
+    "date": "2026-09-13T22:14:25+08:00",
+    "subject": "chore(sprint1-week1): add EvoAgent environment template",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/c56db9621b50918f4427e1cf567665622e9110c7"
+  },
+  {
+    "sha": "eca700e75d462b26525182612f267cc92c6b02a0",
+    "date": "2026-09-13T22:12:25+08:00",
+    "subject": "test(sprint1-week1): add EvoAgent server tests",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/eca700e75d462b26525182612f267cc92c6b02a0"
+  },
+  {
+    "sha": "9e00d8e9e06a2c85d0591e3ae4a79de0a8c07520",
+    "date": "2026-09-13T22:09:52+08:00",
+    "subject": "feat(sprint1-week1): add EvoAgent web interface",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/9e00d8e9e06a2c85d0591e3ae4a79de0a8c07520"
+  },
+  {
+    "sha": "5f884417baa71975b898eeef8a469d126815b829",
+    "date": "2026-09-13T22:07:28+08:00",
+    "subject": "feat(sprint1-week1): add EvoAgent prototype core",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/5f884417baa71975b898eeef8a469d126815b829"
+  },
+  {
+    "sha": "c4b6c5f160aabd846a1b116720611949b4c721a5",
+    "date": "2026-09-13T22:04:28+08:00",
+    "subject": "chore: initialize Sprint 1 Week 1 EvoAgent progress",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/c4b6c5f160aabd846a1b116720611949b4c721a5"
+  },
+  {
+    "sha": "5800b345c96d6ea336d0d7f0c466a7c3567cbacd",
+    "date": "2026-09-01T21:04:22+08:00",
+    "subject": "docs: add Chinese project requirements",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/5800b345c96d6ea336d0d7f0c466a7c3567cbacd"
+  },
+  {
+    "sha": "e47eb70a475e18ab3eb1281806d5d1c7d4370ca9",
+    "date": "2026-09-01T21:02:02+08:00",
+    "subject": "docs: add CS5351 project requirements",
+    "url": "https://github.com/Theo-sssssss/CS5351-Project/commit/e47eb70a475e18ab3eb1281806d5d1c7d4370ca9"
+  }
+]

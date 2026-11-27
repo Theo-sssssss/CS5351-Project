@@ -1,0 +1,60 @@
+{
+  "mode": "deterministic model fixture",
+  "result": "PASS",
+  "events": [
+    {
+      "method": "create_review",
+      "result": {
+        "task_id": "9daa0e5f-37d7-4084-a354-72f55df80e1b",
+        "state": "PAUSED_BUDGET"
+      },
+      "coverage": {
+        "total": 12,
+        "completed": 2,
+        "complete": false
+      }
+    },
+    {
+      "method": "accept_review",
+      "exception": "ReviewConflict"
+    },
+    {
+      "method": "resume_task",
+      "result": {
+        "task_id": "9daa0e5f-37d7-4084-a354-72f55df80e1b",
+        "state": "PENDING",
+        "resumed": true
+      }
+    },
+    {
+      "method": "accept_review",
+      "result": {
+        "report_revision": "b12fff34601dc3f07ff86b280993f564ceb85100e67f730cb2cfde2a0b47f35d",
+        "actor": "reviewer",
+        "accepted_at": "2026-11-21T10:46:50.430901+00:00"
+      },
+      "coverage": {
+        "total": 12,
+        "completed": 12,
+        "complete": true
+      }
+    },
+    {
+      "method": "accept_review",
+      "result": {
+        "report_revision": "b12fff34601dc3f07ff86b280993f564ceb85100e67f730cb2cfde2a0b47f35d",
+        "actor": "reviewer",
+        "accepted_at": "2026-11-21T10:46:50.430901+00:00"
+      },
+      "coverage": {
+        "total": 12,
+        "completed": 12,
+        "complete": true
+      }
+    },
+    {
+      "method": "accept_review",
+      "exception": "ValueError"
+    }
+  ]
+}
