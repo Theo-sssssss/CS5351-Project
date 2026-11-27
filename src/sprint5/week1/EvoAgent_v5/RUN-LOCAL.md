@@ -1,13 +1,13 @@
-# EvoAgent 本地运行
+# Run EvoAgent Locally
 
-解压后进入包含 `requirements.txt` 的 `EvoAgent` 目录。建议使用 Python 3.11。
+Extract the source archive and enter its `EvoAgent` directory, which contains `requirements.txt`. Python 3.11 is recommended.
 
 ## Windows PowerShell
 
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 ## macOS / Linux
@@ -15,24 +15,15 @@ Copy-Item .env.example .env
 ```bash
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-cp .env.example .env
+cp -n .env.example .env
 ```
 
-已有 `.env` 时，保留原文件并按需修改。首次运行使用本机 SQLite，无需先安装 PostgreSQL 或 Redis。
+Preserve an existing `.env`. Local SQLite use does not require PostgreSQL or Redis.
 
-## 配置模型并启动
+## Configure and start
 
-打开 `.env`，换成自己的模型配置。例如使用 DeepSeek 时，修改这两项：
+Use your own valid model configuration. An OpenAI-compatible endpoint needs `EVOAGENT_LLM_PROVIDER=custom`, `EVOAGENT_LLM_BASE_URL`, `EVOAGENT_LLM_API_KEY` and `EVOAGENT_LLM_MODEL`. The DeepSeek preset uses `EVOAGENT_LLM_PROVIDER=deepseek` and `EVOAGENT_DEEPSEEK_API_KEY`. Configure authentication/admin settings as described in `README.md` when authentication is enabled.
 
-```dotenv
-EVOAGENT_LLM_PROVIDER=deepseek
-EVOAGENT_DEEPSEEK_API_KEY=<填你自己的密钥>
-```
+Start with `.venv/bin/python -m evoagent` on macOS/Linux or `.\.venv\Scripts\python.exe -m evoagent` on Windows. Open `http://127.0.0.1:8080/`.
 
-也可使用 OpenAI 兼容服务，配置 `EVOAGENT_LLM_PROVIDER=custom`、`EVOAGENT_LLM_BASE_URL`、`EVOAGENT_LLM_API_KEY` 和 `EVOAGENT_LLM_MODEL`。未配置模型时，可以启动服务和打开管理台，模型审查需要先配置模型。
-
-- Windows 运行 `.\.venv\Scripts\python.exe -m evoagent`。
-- macOS 或 Linux 运行 `.venv/bin/python -m evoagent`。
-
-打开 `http://127.0.0.1:8080/`。可先选择「手动提交 Diff」验证模型审查，再按需配置 GitHub 接入。
-
+A service can start without a configured model, but a model-backed review needs a working provider. Begin with a manual diff if appropriate, then configure GitHub intake separately. Keep local keys and databases outside the distributed archive.

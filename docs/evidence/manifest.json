@@ -7,84 +7,84 @@
   "evidence_type": "Team-supplied discussion calendar screenshots",
   "files": [
     {
-      "file": "01_Week02_9月11日.jpg",
+      "file": "week-02-2026-09-11.jpg",
       "course_week": 2,
       "scheduled_date": "2026-09-11",
       "bytes": 50440,
       "sha256": "e56c7db3e78c65f82446ba4b1ba1479a6b5235843d01d92faaa73d08cfc7b004"
     },
     {
-      "file": "02_Week03_9月18日.jpg",
+      "file": "week-03-2026-09-18.jpg",
       "course_week": 3,
       "scheduled_date": "2026-09-18",
       "bytes": 51076,
       "sha256": "322a31aa7156a31ce3555e3d4eca2096a3bb96662d8aa78bd0b3e9053bd61fa4"
     },
     {
-      "file": "03_Week04_9月25日.jpg",
+      "file": "week-04-2026-09-25.jpg",
       "course_week": 4,
       "scheduled_date": "2026-09-25",
       "bytes": 51117,
       "sha256": "3b1a1ea585d47e6bc1e7c36d05648d4720a4c091791dabb1805fd6cb4c6ffb8e"
     },
     {
-      "file": "04_Week05_10月2日.jpg",
+      "file": "week-05-2026-10-02.jpg",
       "course_week": 5,
       "scheduled_date": "2026-10-02",
       "bytes": 50768,
       "sha256": "28c84f809caee80c11c41ea647b15e06130daf0f7d4d4245cb7564e65653565e"
     },
     {
-      "file": "05_Week06_10月16日.jpg",
+      "file": "week-06-2026-10-16.jpg",
       "course_week": 6,
       "scheduled_date": "2026-10-16",
       "bytes": 51159,
       "sha256": "ece11ede57736746ab98a60c00d8fa107abbf0a5afd7ef1aaef9aa7460984798"
     },
     {
-      "file": "06_Week07_10月23日.jpg",
+      "file": "week-07-2026-10-23.jpg",
       "course_week": 7,
       "scheduled_date": "2026-10-23",
       "bytes": 51484,
       "sha256": "831d850a8bfe1ba3fc171562e665cb76a00360fc88096003b547e99d6ed4ec45"
     },
     {
-      "file": "07_Week08_10月30日.jpg",
+      "file": "week-08-2026-10-30.jpg",
       "course_week": 8,
       "scheduled_date": "2026-10-30",
       "bytes": 51544,
       "sha256": "637934e77b0173b47dff615841abf3ab81c9b5eed8539b5c2c1f98ef2d7ac415"
     },
     {
-      "file": "08_Week09_11月6日.jpg",
+      "file": "week-09-2026-11-06.jpg",
       "course_week": 9,
       "scheduled_date": "2026-11-06",
       "bytes": 50559,
       "sha256": "5ff77023eab8e6fad0abf67557d67ab017ef7ad3f3575e1fb5afac80ef6b2647"
     },
     {
-      "file": "09_Week10_11月13日.jpg",
+      "file": "week-10-2026-11-13.jpg",
       "course_week": 10,
       "scheduled_date": "2026-11-13",
       "bytes": 51101,
       "sha256": "00754840b833cd404bfe0f71b5181f7af56befbfb9ef37efc760dfd636611e96"
     },
     {
-      "file": "10_Week11_11月20日.jpg",
+      "file": "week-11-2026-11-20.jpg",
       "course_week": 11,
       "scheduled_date": "2026-11-20",
       "bytes": 51252,
       "sha256": "e0899fffb4554c2552e21aea14bf698f4ee13ba6c861556dfc8cba3ca612f3e4"
     },
     {
-      "file": "11_Week12_11月27日.jpg",
+      "file": "week-12-2026-11-27.jpg",
       "course_week": 12,
       "scheduled_date": "2026-11-27",
       "bytes": 51042,
       "sha256": "7efa3860da1b345833b4d9417410a59542c395e69f6d39eb770a76a2fb248747"
     },
     {
-      "file": "12_Week13_12月4日.jpg",
+      "file": "week-13-2026-12-04.jpg",
       "course_week": 13,
       "scheduled_date": "2026-12-04",
       "bytes": 50684,

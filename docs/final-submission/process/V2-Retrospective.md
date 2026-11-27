@@ -40,9 +40,9 @@ The following screenshots record scheduled appointments in the course Sprint. Te
 
 | Course week | Scheduled date | Screenshot |
 | --- | --- | --- |
-| Week 06 | 2026-10-16 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/05_Week06_10%E6%9C%8816%E6%97%A5.jpg) |
-| Week 07 | 2026-10-23 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/06_Week07_10%E6%9C%8823%E6%97%A5.jpg) |
-| Week 08 | 2026-10-30 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/07_Week08_10%E6%9C%8830%E6%97%A5.jpg) |
-| Week 09 | 2026-11-06 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/08_Week09_11%E6%9C%886%E6%97%A5.jpg) |
+| Week 06 | 2026-10-16 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-06-2026-10-16.jpg) |
+| Week 07 | 2026-10-23 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-07-2026-10-23.jpg) |
+| Week 08 | 2026-10-30 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-08-2026-10-30.jpg) |
+| Week 09 | 2026-11-06 | [Calendar entry](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-09-2026-11-06.jpg) |
 
 See the [complete screenshot index](https://github.com/Theo-sssssss/CS5351-Project/tree/main/docs/evidence) and [V2 Review](V2-Review.md) for source/test links. The current V5 verification and experiments remain in their own records; their test count and metrics are not substituted for V2.

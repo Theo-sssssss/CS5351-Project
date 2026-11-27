@@ -1,26 +1,75 @@
 # EvoAgent — CS5351 Group 04
 
-Team name: **group**. EvoAgent is a pull-request review assistant with evidence-linked findings, controlled agent/tool execution, batch coverage and checkpoint recovery, repository feedback, and evaluated Skill or prompt updates.
+**Team name: group.** EvoAgent helps developers review pull requests through evidence-linked findings, bounded agent execution, visible review coverage and controlled updates to review configuration.
 
-## Current delivery
+## Start here
 
-- [V5 refreshed source](src/sprint5/week1/EvoAgent_v5)
-- [Presentation, demo and delivery records](docs/final-submission)
-- [Completed V5 Review and Retrospective](docs/final-submission/process/V5-Sprint-Backlog-Review-Retrospective.md)
-- [Weekly SE discussion screenshots](docs/evidence)
-- [Run and verify](docs/final-submission/RUN-AND-VERIFY.md)
-- [Current-source offline evaluation](docs/final-submission/evidence/evaluation/current-source-20261127/README.md)
+| Material | Location |
+| --- | --- |
+| Current V5 source | [Source and setup guide](src/sprint5/week1/EvoAgent_v5) |
+| Presentation and demo | [PowerPoint](docs/final-submission/submission/EvoAgent-Presentation.pptx), [slides PDF](docs/final-submission/submission/EvoAgent-Presentation.pdf), [demo video](docs/final-submission/submission/EvoAgent-Demo.mp4) |
+| Process records | [Sprint and version index](docs/final-submission/process) |
+| Individual contributions | [Version hours, completed V5 tasks and evidence](docs/final-submission/process/Contribution-Traceability.md) |
+| Weekly discussion evidence | [Twelve original calendar screenshots](docs/evidence) |
+| Testing and evaluation | [Regression record](docs/final-submission/evidence/release/latest-source-test-run.json), [offline results](docs/final-submission/evidence/evaluation/current-source-20261127/README.md) |
+| Reproduction instructions | [Run and verify](docs/final-submission/RUN-AND-VERIFY.md) |
 
-The current source archive passed **89 regression tests** after extraction with Python 3.11.5. On the 100-case controlled synthetic fixture, the full workflow measured precision 100.00%, recall 82.50% and F1 90.41% across all cases; on the separate 20-case holdout, precision was 100.00%, recall 62.50% and F1 76.92%. The evolved Skill gave zero matched holdout gain. These offline runs used deterministic rules and simulated model clients, not a real LLM. The report separately describes the archived single-public-PR execution pilot and its limits.
+## What the tool does
 
-## Team and process
+- Accepts a unified diff or a GitHub pull request and returns structured findings tied to changed-code evidence.
+- Coordinates Lead, specialist and Critic roles under tool permissions and resource limits.
+- Reviews large changes in batches, exposes completed/outstanding coverage and resumes from saved checkpoints.
+- Stores repository/tenant-scoped feedback and supports declarative review Skills.
+- Replays candidate Skill or prompt changes before allowing eligible publication or rollback.
 
-Jiexuan Shen, Jiayu Zhu, Siye Tu, Tianyi Jiang, Jianyu Zhou and Xinyu Zhang each recorded 36 hours (216 team hours). Three course Sprints covered five version increments. Individual allocation is documented in the backlogs and confirmed contribution statements; members handed work to Jiexuan Shen for integration and centralized GitHub uploads.
+The two non-functional requirements are **security and isolation** and **reliability and recoverability**. Source, tests and process records document the relevant authority boundaries, task states, checkpoints and acceptance criteria.
 
-The two non-functional requirements are security/isolation and reliability/recoverability. Their architecture choices and tests are described in the report. Course requirements and the original backlog workbooks remain in `docs/`. Historical source increments remain in `src/` and Git history.
+## Three Sprints, five versions
 
-## Delivery status
+The global version numbering is unchanged: **V1 belongs to Sprint 1; V2/V3 to Sprint 2; V4/V5 to Sprint 3.** Repository folders named `sprint1` through `sprint5` are version-storage paths, not five course Sprints.
 
-The report remains local and is intentionally not pushed at the user's request. It includes the required content categories, burndown, contribution allocation, biographies and confirmed self-reflections. It uses IEEEtran and has approximately 10,700 body words after the specified exclusions. The rubric check records the remaining section-length differences. Presentation rehearsal and official course submission remain team delivery activities. Website translation was deferred at the user's request; video inspection was waived.
+| Global version | Course Sprint | Main increment | Review | Retrospective |
+| --- | --- | --- | --- | --- |
+| V1 | Sprint 1 | Single-call review baseline | [Review](docs/final-submission/process/V1-Review.md) | [Retrospective](docs/final-submission/process/V1-Retrospective.md) |
+| V2 | Sprint 2 | Fixed collaboration and diff-evidence gates | [Review](docs/final-submission/process/V2-Review.md) | [Retrospective](docs/final-submission/process/V2-Retrospective.md) |
+| V3 | Sprint 2 | Bounded tools, budgets and checkpoint recovery | [Review](docs/final-submission/process/V3-Review.md) | [Retrospective](docs/final-submission/process/V3-Retrospective.md) |
+| V4 | Sprint 3 | Adaptive context, scoped memory and declarative Skills | [Review](docs/final-submission/process/V4-Review.md) | [Retrospective](docs/final-submission/process/V4-Retrospective.md) |
+| V5 | Sprint 3 | Controlled evolution and integrated delivery | [Completed Review and Retrospective](docs/final-submission/process/V5-Sprint-Backlog-Review-Retrospective.md) | Same combined record |
 
-Real environment settings, credentials, application databases, dependency environments and caches are excluded. Configuration templates are supplied as `.env.example`.
+V3's upload followed the Sprint 2 ceremony, and the V4 maintenance pass identifies a repaired local copy. Their records preserve those distinctions instead of inferring historical sign-off from upload dates.
+
+## Verification results
+
+The packaged current-source regression passed **89 tests**. The run record retains its archive hash, Python environment and full output.
+
+| Controlled full-workflow measurement | Cases | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| Aggregate: train + validation + holdout | 100 | 100.00% | 82.50% | 90.41% |
+| Separate held-out subset | 20 | 100.00% | 62.50% | 76.92% |
+
+These fixture results use deterministic rules and simulated model clients, with no real LLM calls. The evolved Skill gave zero matched holdout F1 gain. The separate prompt replay improved fixture F1 while production activation remained blocked by provenance. An archived single-public-PR pilot measures execution completion; it does not establish real-PR accuracy. See the [evidence index](docs/final-submission/process/Evidence-Index.md) for the exact scope of each result.
+
+## Run locally
+
+From the repository root:
+
+```bash
+cd src/sprint5/week1/EvoAgent_v5
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+cp -n .env.example .env
+```
+
+Configure your model endpoint/key and authentication settings in the local `.env`, then start:
+
+```bash
+.venv/bin/python -m evoagent
+```
+
+Open `http://127.0.0.1:8080/`. Follow the [V5 guide](src/sprint5/week1/EvoAgent_v5/README.md) for model configuration, authentication, API routes and webhook setup. Real credentials, application databases and dependency environments stay outside Git.
+
+## Team and delivery status
+
+Jiexuan Shen, Jiayu Zhu, Siye Tu, Tianyi Jiang, Jianyu Zhou and Xinyu Zhang each recorded **36 hours**, totaling **216 team hours**. Members handed their outputs to Jiexuan Shen for integration and centralized uploads. Backlogs and the confirmed contribution table record individual responsibility.
+
+The source, English process documents, presentation, supplied demo and verification evidence are published here. **The report PDF, LaTeX source and personal report statements remain local and are intentionally not pushed.** Presentation rehearsal and official submission remain team delivery activities. Website translation was deferred; original screenshot evidence is preserved unchanged.

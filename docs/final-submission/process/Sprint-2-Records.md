@@ -16,10 +16,10 @@ The team confirmed all six members attended the meetings already held. The techn
 
 | Course week | Scheduled date | Screenshot |
 | --- | --- | --- |
-| Week 06 | 2026-10-16 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/05_Week06_10%E6%9C%8816%E6%97%A5.jpg) |
-| Week 07 | 2026-10-23 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/06_Week07_10%E6%9C%8823%E6%97%A5.jpg) |
-| Week 08 | 2026-10-30 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/07_Week08_10%E6%9C%8830%E6%97%A5.jpg) |
-| Week 09 | 2026-11-06 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/ea1c3e7bcaf0f61dfb04b0d11ab57b384567b037/docs/evidence/08_Week09_11%E6%9C%886%E6%97%A5.jpg) |
+| Week 06 | 2026-10-16 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-06-2026-10-16.jpg) |
+| Week 07 | 2026-10-23 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-07-2026-10-23.jpg) |
+| Week 08 | 2026-10-30 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-08-2026-10-30.jpg) |
+| Week 09 | 2026-11-06 | [Calendar screenshot](https://github.com/Theo-sssssss/CS5351-Project/blob/main/docs/evidence/week-09-2026-11-06.jpg) |
 
 These screenshots record scheduled entries. The team separately confirmed attendance; original meeting votes, live demonstrations and sign-offs are not reconstructed from calendar images.
 

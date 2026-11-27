@@ -11,14 +11,9 @@
       "sha256": "a455187d9774a4671b7f3f8be2587c0d25c6825ceaa12ea8bf3f3b8e259f9b71"
     },
     {
-      "path": "REMAINING-WORK.md",
-      "bytes": 1017,
-      "sha256": "6baf113fc90106db5b689566eaf178c135a1e7100bf3d21f830e009d1c371a4d"
-    },
-    {
       "path": "RUN-AND-VERIFY.md",
-      "bytes": 4162,
-      "sha256": "c8cf2e15582efaf01ac0971a73fef500b6a3810328da519729528950c33d76c7"
+      "bytes": 4183,
+      "sha256": "e2efeba541d363571be39f9d3403023270ee11cda9a5a8e63792c520ab1f93ee"
     },
     {
       "path": "editable/Burndown-Plan.pdf",
@@ -267,23 +262,23 @@
     },
     {
       "path": "process/Sprint-1-Records.md",
-      "bytes": 10156,
-      "sha256": "f3f67808b454a391c73b14763d5c2b6d4e8f1ecaab7f7894a2f8e5687d30a85d"
+      "bytes": 9960,
+      "sha256": "df5f3246aa2a3a268bce2b6fc1c77db066447602e384f331e9be831ee5489be2"
     },
     {
       "path": "process/Sprint-2-Records.md",
-      "bytes": 10932,
-      "sha256": "0f786f7fd1eba52ecf108f6e5556a9f85edb399f14c0944df27fb830af6b0433"
+      "bytes": 10733,
+      "sha256": "92415d3c10fe0297c3f27eccf5dbb2fda2eb8853f8ff571f6447802a73997c21"
     },
     {
       "path": "process/Sprint-3-Records.md",
-      "bytes": 9746,
-      "sha256": "7ca5e1a582b56e09455e4e9766aef67f8aa8a7630ef9e3733cff68baa8a091d9"
+      "bytes": 9547,
+      "sha256": "9f1e5d1962046cc6ec9ef550258bae44f5b2ceaf52ff8e210d4b1001c3f47472"
     },
     {
       "path": "process/V1-Retrospective.md",
-      "bytes": 4903,
-      "sha256": "c3a4a5efd36e5f7f043aa90cebbb7e8e095ade8763ff18eb34a992cb0d2b49e3"
+      "bytes": 4707,
+      "sha256": "c90c1489e58e6b158f80309e7e2438815d681880a54b833f09b8b46b0ca5501c"
     },
     {
       "path": "process/V1-Review.md",
@@ -292,8 +287,8 @@
     },
     {
       "path": "process/V2-Retrospective.md",
-      "bytes": 4804,
-      "sha256": "bd2d9d4695cedc55de6f1d0bcdebbabe8848ac2c719e28955a51c423face54a6"
+      "bytes": 4605,
+      "sha256": "8e1cc58579a0ab09a19eae2fe803eece4e6fcc4fe66d4a4e064f4209d81f220a"
     },
     {
       "path": "process/V2-Review.md",
@@ -302,8 +297,8 @@
     },
     {
       "path": "process/V3-Retrospective.md",
-      "bytes": 4909,
-      "sha256": "75c416a3808e4adfee9369a23f95a4ca87d924b5767532c8c7a15ce5d1bdbd68"
+      "bytes": 4710,
+      "sha256": "c77976d7a6c6a3689235538c67a58872138cf0f56d61a525b8f91e10f07d6378"
     },
     {
       "path": "process/V3-Review.md",
@@ -312,8 +307,8 @@
     },
     {
       "path": "process/V4-Retrospective.md",
-      "bytes": 5228,
-      "sha256": "dbee4e554109f78f72d0cf5c282644c862b4fbeae6937a02ed4df87536833104"
+      "bytes": 5078,
+      "sha256": "055e83063e45f31bf2e070b80dd3068ea61da6bbb30d6c262256d2893fe75c5d"
     },
     {
       "path": "process/V4-Review.md",

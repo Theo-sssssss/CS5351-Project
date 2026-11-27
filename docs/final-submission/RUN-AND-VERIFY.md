@@ -64,4 +64,4 @@ The report PDF and LaTeX source remain local and are intentionally excluded from
 
 ## Current presentation and demo status
 
-The current deck is `submission/EvoAgent-Presentation.pptx`, with a matching PDF and updated speaking notes. The earlier slide LaTeX source has been retired. The updated user-supplied demonstration is packaged as `submission/EvoAgent-Demo.mp4`. Video inspection was waived by the user. Presentation rehearsal remains a team delivery activity. Website translation to English is deferred at the user's request. See `REMAINING-WORK.md`.
+The current deck is `submission/EvoAgent-Presentation.pptx`, with a matching PDF and updated speaking notes. The earlier slide LaTeX source has been retired. The updated user-supplied demonstration is packaged as `submission/EvoAgent-Demo.mp4`. Video inspection was waived by the user. Presentation rehearsal remains a team delivery activity. Website translation to English is deferred at the user's request. See the process index in `process/README.md`.
